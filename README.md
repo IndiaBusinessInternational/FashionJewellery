@@ -38,6 +38,18 @@ Written with blanks on first start. Edit it, then restart the server.
 | `accessPin` | **Blank = this laptop only.** The server *refuses* every remote caller while it is blank, so it cannot be left open by accident. Set it before using Wi-Fi or the tunnel. |
 | `ownerPin` | Needed to delete a product or redraw the sale-sync baseline. Blank = those are refused. |
 
+**Saving the PIN in a browser.** The sign-in page carries a real username field, pre-filled
+`IBI-Jewellery`, so a password manager files this app under its own name. Without a username
+field the browser reuses whatever username it already knows for the account — every IBI app
+collapses into one `iINTELLIGENCEi` entry and there is no telling which saved password
+belongs to which app. Give each app a distinct username (`IBI-Jewellery`, `IBI-SocialFlow`,
+`IBI-ERP`, …) and the right password is offered on the right site.
+
+Two details that make the prompt actually appear: the password input is
+`autocomplete="current-password"` (**`autocomplete="off"` is precisely what suppresses the
+save prompt**), and the page only navigates on a *successful* sign-in — a wrong PIN must not
+reload, or the browser offers to save the wrong password.
+
 Both PINs are rate-limited: **six wrong answers from one address pauses that address for 15
 minutes**, and while paused even the correct PIN is refused. This is what makes a short PIN
 safe to expose — a 4-digit code is only 10,000 guesses, which is minutes of work without a
