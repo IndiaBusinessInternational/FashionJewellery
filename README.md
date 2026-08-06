@@ -45,9 +45,11 @@ recorded in the `SyncState` tab — so the same sale can never be deducted twice
    runs `syncOrders`, which re-reads the Orders feed and applies anything the push missed.
    Optional hourly automation: run `fjInstallSyncTrigger` once in the Apps Script editor.
 
-**Baseline.** The very first sync marks every order already in the Orders sheet as
-*already accounted for* **without** deducting anything, so switching the link on does not
-wipe the register with months of history. Owner Mode → *Reset Sale-Sync Baseline* re-runs it.
+**Baseline.** The very first sync deducts nothing; it just records the highest order
+Serial Number as `SYNC_MAX_SERIAL`, and later runs ignore everything at or below it. So
+switching the link on does not wipe the register with months of history — and, importantly,
+a product added to the register *next month* does not suddenly match old orders and
+retro-deduct them. Owner Mode → *Reset Sale-Sync Baseline* re-draws the line at today.
 
 **Matching** is case/punctuation-insensitive on the product name, then SKU, then the
 `Aliases` field (marketplace titles, separated by `|`), and finally an *unambiguous*
