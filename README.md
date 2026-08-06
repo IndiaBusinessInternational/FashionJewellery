@@ -37,6 +37,13 @@ Written with blanks on first start. Edit it, then restart the server.
 | `port` | 3100 by default (3000 belongs to IBI Social Flow) |
 | `accessPin` | **Blank = this laptop only.** The server *refuses* every remote caller while it is blank, so it cannot be left open by accident. Set it before using Wi-Fi or the tunnel. |
 | `ownerPin` | Needed to delete a product or redraw the sale-sync baseline. Blank = those are refused. |
+
+Both PINs are rate-limited: **six wrong answers from one address pauses that address for 15
+minutes**, and while paused even the correct PIN is refused. This is what makes a short PIN
+safe to expose — a 4-digit code is only 10,000 guesses, which is minutes of work without a
+lockout. The counter lives in memory, so restarting the server clears it. Behind Cloudflare
+the caller is identified by `cf-connecting-ip`, which Cloudflare sets at its edge and refuses
+to let a client forge (it rejects such requests with error 1000).
 | `pushKey` | The shared key IBI Order Processing sends with its instant push. Blank = the push is off; the poll below still applies every sale. |
 | `pollMinutes` | How often the laptop checks Order Processing for new sales (5) |
 
