@@ -297,6 +297,14 @@ td img{width:38px;height:38px;object-fit:cover;border-radius:7px;display:block;}
 .imgctl{flex:1;display:flex;flex-direction:column;gap:7px;min-width:0;}
 .imgctl .btn{width:100%;text-align:center;}
 input[type=file]{display:none;}
+/* Camera and Gallery side by side — both thumb-sized, since this app is used
+   on a phone far more than on the laptop. */
+.img-btns{display:flex;gap:7px;}
+.img-btns .btn{flex:1;padding:12px 8px;font-size:13px;}
+@media(max-width:400px){
+  .imgbox{flex-direction:column;}
+  .imgprev{width:100%;height:150px;}
+}
 
 .section-h{
   font-size:10px;letter-spacing:1.3px;text-transform:uppercase;color:var(--cyan);
@@ -411,7 +419,7 @@ footer b{color:var(--cyan);}
       <small>Imitation Jewellery Stock</small>
     </div>
   </div>
-  <span class="ver-badge" id="verBadge" title="Tap for Owner Mode">v2.0</span>
+  <span class="ver-badge" id="verBadge" title="Tap for Owner Mode">v2.1</span>
   <span class="spacer"></span>
   <button class="icon-btn" id="syncBtn" title="Sync sales from IBI Order Processing">&#8635;</button>
   <button class="icon-btn" id="themeBtn" title="Light / dark">&#9680;</button>
@@ -473,7 +481,7 @@ footer b{color:var(--cyan);}
 <button class="fab" id="fab">&#43; Add</button>
 
 <footer>
-  <b>IBI Fashion Jewellery v2.0</b> &middot; India Business International<br>
+  <b>IBI Fashion Jewellery v2.1</b> &middot; India Business International<br>
   Served from this laptop &middot; records kept locally in <b>Backend\data\</b>.<br>
   Stock is deducted automatically when a sale is saved in <b>IBI Order Processing</b>.<br>
   <span id="footStat"></span>
@@ -500,10 +508,18 @@ footer b{color:var(--cyan);}
           <div class="imgbox">
             <div class="imgprev" id="pImgPrev">&#128142;</div>
             <div class="imgctl">
+              <!-- Two separate inputs on purpose. `capture` opens the phone's rear
+                   camera straight away; without it the browser decides, and some
+                   Android builds go to the gallery with no camera option at all. -->
+              <input type="file" id="pCamera" accept="image/*" capture="environment">
               <input type="file" id="pFile" accept="image/*">
-              <button class="btn" type="button" id="pPickBtn">&#128247; Choose / take a photo</button>
+              <div class="img-btns">
+                <button class="btn primary" type="button" id="pCamBtn">&#128247; Take Photo</button>
+                <button class="btn" type="button" id="pPickBtn">&#127748; Gallery</button>
+              </div>
               <input id="pImgUrl" placeholder="…or paste an image URL" autocomplete="off">
               <div class="hint" id="pImgHint">Photos are shrunk to 1000&nbsp;px and saved on this laptop under <b>Backend\data\images\</b>.</div>
+              <button class="btn ghost" type="button" id="pImgClear" style="display:none;color:var(--bad);border-color:rgba(239,68,68,.4);">Remove photo</button>
             </div>
           </div>
         </div>
@@ -672,7 +688,7 @@ footer b{color:var(--cyan);}
     <a class="ditem" href="https://orders.indiabusinessinternational.online/" target="_blank" rel="noopener"><span class="di">&#128230;</span><span>IBI Order Processing<small>Where sales are recorded</small></span></a>
     <button class="ditem" id="dBaseline" style="display:none;"><span class="di">&#9878;</span><span>Reset Sale-Sync Baseline<small>Owner only — re-mark today as the starting point</small></span></button>
     <div style="margin-top:14px;padding:11px;border-radius:11px;background:var(--bg2);border:1px solid var(--border);font-size:11px;color:var(--text-muted);line-height:1.7;word-break:break-word;">
-      <b style="color:var(--cyan);">Version v2.0</b> &middot; this laptop is the server<br>
+      <b style="color:var(--cyan);">Version v2.1</b> &middot; this laptop is the server<br>
       <span id="dPing">Server: checking…</span>
     </div>
   </div>
@@ -686,7 +702,7 @@ footer b{color:var(--cyan);}
    IBI FASHION JEWELLERY  —  front end
    Version badge lives in: .ver-badge, footer, drawer "Version" line, sw.js
    ═══════════════════════════════════════════════════════════════════════════ */
-var APP_VERSION = "v2.0";
+var APP_VERSION = "v2.1";
 
 /* The laptop is the server. This page is served by Backend\server.js, so the
    API is same-origin — there is nothing to configure and no cloud backend.
@@ -1055,6 +1071,9 @@ function openProduct(p){
   $('pAliases').value   = p ? p['Aliases'] : '';
   $('pNotes').value     = p ? p['Notes'] : '';
   $('pImgUrl').value    = p ? p['Image URL'] : '';
+  $('pCamera').value = ''; $('pFile').value = '';
+  $('pImgHint').innerHTML = 'Tap <b>Take Photo</b> to shoot it now, or <b>Gallery</b> to pick one.'
+    + ' Photos are shrunk to 1000&nbsp;px and kept on the laptop.';
   setPreview(p ? p['Image URL'] : '');
   updateMargin();
   $('prodOverlay').classList.add('open');
@@ -1071,48 +1090,84 @@ function setPreview(url){
   $('pImgPrev').innerHTML = url
     ? '<img src="' + esc(url) + '" alt="">'
     : '&#128142;';
+  $('pImgClear').style.display = url ? 'block' : 'none';
 }
-$('pImgUrl').addEventListener('input', function(){ pendingImage = null; setPreview(this.value.trim()); });
+$('pImgUrl').addEventListener('input', function(){
+  pendingImage = null; setPreview(this.value.trim());
+});
+$('pCamBtn').onclick  = function(){ $('pCamera').click(); };
 $('pPickBtn').onclick = function(){ $('pFile').click(); };
-$('pFile').addEventListener('change', function(){
-  var f = this.files && this.files[0];
+$('pCamera').addEventListener('change', function(){ takeImage(this, 'Photo'); });
+$('pFile').addEventListener('change',   function(){ takeImage(this, 'Image'); });
+
+$('pImgClear').onclick = function(){
+  pendingImage = null;
+  $('pImgUrl').value = '';
+  $('pCamera').value = ''; $('pFile').value = '';
+  setPreview('');
+  $('pImgHint').innerHTML = 'Photos are shrunk to 1000&nbsp;px and saved on this laptop under <b>Backend\\data\\images\\</b>.';
+};
+
+function takeImage(input, label){
+  var f = input.files && input.files[0];
   if(!f) return;
-  $('pImgHint').textContent = 'Preparing ' + f.name + '…';
+  $('pImgHint').textContent = label + ' received — preparing…';
   shrinkImage(f, 1000, 0.82).then(function(dataUrl){
     pendingImage = { data: dataUrl, mime: 'image/jpeg' };
     setPreview(dataUrl);
     $('pImgUrl').value = '';
     var kb = Math.round(dataUrl.length * 0.73 / 1024);
-    $('pImgHint').innerHTML = 'Photo ready (~' + kb + ' KB). It is saved on the laptop when you save.';
+    $('pImgHint').innerHTML = label + ' ready (~' + kb + ' KB). It is saved on the laptop when you tap Save.'
+      + '<br>Tap <b>Take Photo</b> again to retake.';
   }).catch(function(){
-    $('pImgHint').textContent = 'Could not read that image — try another file.';
+    $('pImgHint').textContent = 'Could not read that ' + label.toLowerCase() + ' — try again.';
   });
-});
+  // Let the same file be picked twice in a row (a retake of an identical shot
+  // otherwise fires no change event).
+  input.value = '';
+}
 
-/* Downscale + re-encode in the browser so the upload stays small and fast. */
+/* Downscale + re-encode in the browser so the upload stays small and fast.
+   createImageBitmap with imageOrientation:'from-image' is used where available
+   because phone cameras record rotation in EXIF rather than in the pixels —
+   without it a portrait shot lands in the register on its side. */
 function shrinkImage(file, maxPx, quality){
-  return new Promise(function(resolve, reject){
-    var reader = new FileReader();
-    reader.onerror = reject;
-    reader.onload = function(){
-      var img = new Image();
-      img.onerror = reject;
-      img.onload = function(){
-        var w = img.width, h = img.height;
-        var scale = Math.min(1, maxPx / Math.max(w, h));
-        w = Math.round(w * scale); h = Math.round(h * scale);
-        var c = document.createElement('canvas');
-        c.width = w; c.height = h;
-        var ctx = c.getContext('2d');
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, w, h);
-        ctx.drawImage(img, 0, 0, w, h);
-        resolve(c.toDataURL('image/jpeg', quality));
+  function draw(source, w0, h0){
+    var scale = Math.min(1, maxPx / Math.max(w0, h0));
+    var w = Math.round(w0 * scale), h = Math.round(h0 * scale);
+    var c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    var ctx = c.getContext('2d');
+    ctx.fillStyle = '#ffffff';          // JPEG has no alpha; avoid black edges
+    ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(source, 0, 0, w, h);
+    return c.toDataURL('image/jpeg', quality);
+  }
+
+  if(window.createImageBitmap){
+    return createImageBitmap(file, { imageOrientation: 'from-image' })
+      .then(function(bmp){
+        var out = draw(bmp, bmp.width, bmp.height);
+        bmp.close && bmp.close();
+        return out;
+      })
+      .catch(function(){ return legacyShrink(); });
+  }
+  return legacyShrink();
+
+  function legacyShrink(){
+    return new Promise(function(resolve, reject){
+      var reader = new FileReader();
+      reader.onerror = reject;
+      reader.onload = function(){
+        var img = new Image();
+        img.onerror = reject;
+        img.onload = function(){ resolve(draw(img, img.width, img.height)); };
+        img.src = reader.result;
       };
-      img.src = reader.result;
-    };
-    reader.readAsDataURL(file);
-  });
+      reader.readAsDataURL(file);
+    });
+  }
 }
 
 ['pWholesale','pRetail'].forEach(function(id){ $(id).addEventListener('input', updateMargin); });
