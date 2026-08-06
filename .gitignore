@@ -1,0 +1,13 @@
+# Local Claude Code config — not part of the site
+.claude/
+
+# Windows junk
+Thumbs.db
+desktop.ini
+
+# ⚠ Apps Script backend — LOCAL MIRROR ONLY, kept on the laptop under Backend\.
+# GitHub Pages serves every committed file, so publishing a .gs would expose the
+# owner PIN and the sheet wiring at jewellery.indiabusinessinternational.online.
+# Never commit it. (Same lesson as IBI Stock Availability.)
+Backend/
+*.gs
