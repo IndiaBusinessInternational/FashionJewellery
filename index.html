@@ -297,6 +297,22 @@ td img{width:38px;height:38px;object-fit:cover;border-radius:7px;display:block;}
 .imgctl{flex:1;display:flex;flex-direction:column;gap:7px;min-width:0;}
 .imgctl .btn{width:100%;text-align:center;}
 input[type=file]{display:none;}
+/* Quick-pick product names. Chips rather than a dropdown: on a phone they are
+   one tap, they all stay visible, and the field underneath stays a plain text
+   box so the name can be edited straight after picking. */
+.name-picks{display:flex;flex-wrap:wrap;gap:6px;margin-top:5px;}
+.npick{
+  padding:12px 14px;border-radius:999px;cursor:pointer;   /* ≈40px — thumb-sized */
+  font-size:11.5px;font-weight:700;line-height:1.2;text-align:left;
+  background:var(--card2);border:1px solid var(--border);color:var(--text-dim);
+  transition:var(--tr);
+}
+.npick:hover{border-color:var(--border-strong);color:var(--text);}
+.npick.on{
+  background:linear-gradient(135deg,rgba(var(--cr),.24),rgba(233,185,73,.16));
+  border-color:var(--border-strong);color:var(--cyan);
+}
+
 /* Camera and Gallery side by side — both thumb-sized, since this app is used
    on a phone far more than on the laptop. */
 .img-btns{display:flex;gap:7px;}
@@ -419,7 +435,7 @@ footer b{color:var(--cyan);}
       <small>Imitation Jewellery Stock</small>
     </div>
   </div>
-  <span class="ver-badge" id="verBadge" title="Tap for Owner Mode">v2.1</span>
+  <span class="ver-badge" id="verBadge" title="Tap for Owner Mode">v2.3</span>
   <span class="spacer"></span>
   <button class="icon-btn" id="syncBtn" title="Sync sales from IBI Order Processing">&#8635;</button>
   <button class="icon-btn" id="themeBtn" title="Light / dark">&#9680;</button>
@@ -481,7 +497,7 @@ footer b{color:var(--cyan);}
 <button class="fab" id="fab">&#43; Add</button>
 
 <footer>
-  <b>IBI Fashion Jewellery v2.1</b> &middot; India Business International<br>
+  <b>IBI Fashion Jewellery v2.3</b> &middot; India Business International<br>
   Served from this laptop &middot; records kept locally in <b>Backend\data\</b>.<br>
   Stock is deducted automatically when a sale is saved in <b>IBI Order Processing</b>.<br>
   <span id="footStat"></span>
@@ -501,7 +517,9 @@ footer b{color:var(--cyan);}
       <div class="fgrid">
         <div class="field full">
           <label>Product Name <span class="req">*</span></label>
-          <input id="pName" placeholder="e.g. Oxidised Silver Jhumka Earrings, Peacock, 6 cm, 1 Pair" autocomplete="off">
+          <input id="pName" placeholder="Tap an option below, or type your own" autocomplete="off">
+          <div class="name-picks" id="pNamePicks"></div>
+          <div class="hint">Tap to fill, then edit freely — add the colour, size or anything else.</div>
         </div>
         <div class="field full">
           <label>Product Image</label>
@@ -659,6 +677,15 @@ footer b{color:var(--cyan);}
   </div>
 </div>
 
+<!-- ══ RECENTLY DELETED ══ -->
+<div class="overlay" id="trashOverlay">
+  <div class="modal">
+    <div class="mhead"><h2>Recently Deleted</h2><span class="x" data-close="trashOverlay">&times;</span></div>
+    <div class="mbody" id="trashBody"></div>
+    <div class="mfoot"><button class="btn ghost" data-close="trashOverlay">Close</button></div>
+  </div>
+</div>
+
 <!-- ══ LOG MODAL ══ -->
 <div class="overlay" id="logOverlay">
   <div class="modal wide">
@@ -686,9 +713,10 @@ footer b{color:var(--cyan);}
     <button class="ditem" id="dPrint"><span class="di">&#128424;</span><span>Print / Save PDF<small>Current filtered list</small></span></button>
     <button class="ditem" id="dFolder"><span class="di">&#128193;</span><span>Open Data Folder<small>Backend\data\ on this laptop — the real records</small></span></button>
     <a class="ditem" href="https://orders.indiabusinessinternational.online/" target="_blank" rel="noopener"><span class="di">&#128230;</span><span>IBI Order Processing<small>Where sales are recorded</small></span></a>
+    <button class="ditem" id="dTrash" style="display:none;"><span class="di">&#9851;</span><span>Recently Deleted<small>Owner only — put a deleted product back</small></span></button>
     <button class="ditem" id="dBaseline" style="display:none;"><span class="di">&#9878;</span><span>Reset Sale-Sync Baseline<small>Owner only — re-mark today as the starting point</small></span></button>
     <div style="margin-top:14px;padding:11px;border-radius:11px;background:var(--bg2);border:1px solid var(--border);font-size:11px;color:var(--text-muted);line-height:1.7;word-break:break-word;">
-      <b style="color:var(--cyan);">Version v2.1</b> &middot; this laptop is the server<br>
+      <b style="color:var(--cyan);">Version v2.3</b> &middot; this laptop is the server<br>
       <span id="dPing">Server: checking…</span>
     </div>
   </div>
@@ -702,7 +730,7 @@ footer b{color:var(--cyan);}
    IBI FASHION JEWELLERY  —  front end
    Version badge lives in: .ver-badge, footer, drawer "Version" line, sw.js
    ═══════════════════════════════════════════════════════════════════════════ */
-var APP_VERSION = "v2.1";
+var APP_VERSION = "v2.3";
 
 /* The laptop is the server. This page is served by Backend\server.js, so the
    API is same-origin — there is nothing to configure and no cloud backend.
@@ -720,6 +748,24 @@ var CATEGORIES = ['Earrings','Jhumkas','Studs','Necklace','Necklace Set','Choker
 var MATERIALS = ['Gold Plated','Rose Gold Plated','Silver Plated','Oxidised','American Diamond (AD)',
   'Kundan','Polki','Meenakari','Temple / Antique','Pearl','Beads','Stone Studded','Thread / Silk',
   'Terracotta','Brass','Copper','Alloy','Stainless Steel','Acrylic','Resin','Wood','Others'];
+
+/* Nearly every piece comes from the same supplier, so a new product starts
+   pre-filled with it. Still a plain text box — type over it for anything
+   bought elsewhere. Change the name here if the supplier ever changes. */
+var DEFAULT_SUPPLIER = 'Chaminis Glitz';
+
+/* The lines stocked most often. Tapping one fills the Product Name box, which
+   stays fully editable — the usual flow is pick the line, then append the
+   colour ("… - Red & Black"). Add or reword entries here at any time; the
+   register accepts any name, these are only shortcuts. */
+var NAME_PRESETS = [
+  'Hydro Crystal Beads Chain Single Color',
+  'Hydro Crystal Beads Chain Double Color',
+  'Hydro Crystal Beads Chain Triple Color',
+  'Invisible Chain Single Layer',
+  'Invisible Chain Double Layer',
+  'Invisible Chain Triple Layer'
+];
 
 var products = [], filtered = [], ownerToken = '', dataDir = '';
 var view = localStorage.getItem(LS_VIEW) || 'grid';
@@ -804,6 +850,7 @@ document.addEventListener('keydown', function(e){
 function boot(){
   fillSelect($('pCategory'), CATEGORIES, 'Uncategorised');
   fillSelect($('pMaterial'), MATERIALS, '—');
+  buildNamePicks();
   applyViewLabel();
 
   var cached = null;
@@ -852,6 +899,36 @@ function refresh(quiet){
     toast('The laptop server is not responding — showing the last saved copy.<br><small>' + esc(err.message) + '</small>', 'warn');
   });
 }
+
+/* Quick-pick chips for the product name. */
+function buildNamePicks(){
+  $('pNamePicks').innerHTML = NAME_PRESETS.map(function(n){
+    return '<button type="button" class="npick" data-name="' + esc(n) + '">' + esc(n) + '</button>';
+  }).join('');
+}
+
+/* A chip lights up when the field starts with it, so a name like
+   "… Single Color - Red" still shows which line it came from. */
+function markNamePick(){
+  var v = ($('pName').value || '').trim().toLowerCase();
+  var picks = $('pNamePicks').children;
+  for(var i = 0; i < picks.length; i++){
+    var n = picks[i].getAttribute('data-name').toLowerCase();
+    picks[i].classList.toggle('on', v === n || v.indexOf(n) === 0);
+  }
+}
+
+$('pNamePicks').addEventListener('click', function(e){
+  var b = e.target.closest('.npick');
+  if(!b) return;
+  var el = $('pName');
+  el.value = b.getAttribute('data-name');
+  markNamePick();
+  // Leave the caret at the end so the colour can be typed straight on.
+  el.focus();
+  try { el.setSelectionRange(el.value.length, el.value.length); } catch(err){}
+});
+$('pName').addEventListener('input', markNamePick);
 
 function fillSelect(sel, arr, blankLabel){
   sel.innerHTML = '<option value="">' + esc(blankLabel) + '</option>'
@@ -931,7 +1008,7 @@ function applyFilters(){
       case 'price-asc':  return (a.wholesale||0) - (b.wholesale||0);
       case 'price-desc': return (b.wholesale||0) - (a.wholesale||0);
       case 'value':      return (b.qty*(b.wholesale||0)) - (a.qty*(a.wholesale||0));
-      default:           return (b.row||0) - (a.row||0);   // newest appended row first
+      default:           return (b.addedAt||0) - (a.addedAt||0);   // newest first
     }
   });
 
@@ -1065,7 +1142,9 @@ function openProduct(p){
   $('pWeight').value    = p ? p['Weight (gm)'] : '';
   $('pHsn').value       = p ? (p['HSN'] || '7117') : '7117';
   $('pGst').value       = p ? (p['GST %'] === '' ? 3 : p['GST %']) : 3;
-  $('pSupplier').value  = p ? p['Supplier'] : '';
+  // New product → pre-filled. An existing one keeps exactly what it has,
+  // including blank: opening an old record must not quietly restamp it.
+  $('pSupplier').value  = p ? p['Supplier'] : DEFAULT_SUPPLIER;
   $('pPurchase').value  = p ? isoDate(p['Purchase Date']) : '';
   $('pLocation').value  = p ? p['Storage Location'] : '';
   $('pAliases').value   = p ? p['Aliases'] : '';
@@ -1075,6 +1154,7 @@ function openProduct(p){
   $('pImgHint').innerHTML = 'Tap <b>Take Photo</b> to shoot it now, or <b>Gallery</b> to pick one.'
     + ' Photos are shrunk to 1000&nbsp;px and kept on the laptop.';
   setPreview(p ? p['Image URL'] : '');
+  markNamePick();
   updateMargin();
   $('prodOverlay').classList.add('open');
   setTimeout(function(){ $('pName').focus(); }, 60);
@@ -1339,6 +1419,42 @@ $('dLog').onclick = function(){
   });
 };
 
+/* ═══ RECENTLY DELETED ═══════════════════════════════════ */
+$('dTrash').onclick = function(){
+  drawer(false);
+  requireOwner(function(){
+    $('trashBody').innerHTML = '<div class="hint">Loading…</div>';
+    $('trashOverlay').classList.add('open');
+    api('listDeleted', {}).then(function(r){
+      if(!r || !r.ok){ $('trashBody').innerHTML = '<div class="empty">' + esc((r && r.error) || 'Could not load.') + '</div>'; return; }
+      if(!r.items.length){ $('trashBody').innerHTML = '<div class="empty">Nothing deleted.<br><small>Deleted products are kept here so they can be put back.</small></div>'; return; }
+      $('trashBody').innerHTML = r.items.map(function(t){
+        return '<div class="logrow" style="align-items:center;">'
+          + (t.imageUrl ? '<img src="' + esc(t.imageUrl) + '" style="width:44px;height:44px;object-fit:cover;border-radius:8px;flex:none;">' : '<div class="logdelta">&#128142;</div>')
+          + '<div class="loginfo"><b>' + esc(t.name) + '</b>'
+          + '<span>' + esc(t.sku) + ' &middot; ' + t.qty + ' in stock when deleted</span>'
+          + '<span>Deleted ' + esc(t.deletedAt) + '</span></div>'
+          + '<button class="btn primary" data-restore="' + esc(t.id) + '" style="flex:none;padding:7px 12px;font-size:11.5px;">Restore</button>'
+          + '</div>';
+      }).join('');
+    }).catch(function(err){
+      $('trashBody').innerHTML = '<div class="empty">Could not load.<br><small>' + esc(err.message) + '</small></div>';
+    });
+  });
+};
+
+$('trashBody').addEventListener('click', function(e){
+  var btn = e.target.closest('[data-restore]');
+  if(!btn) return;
+  btn.disabled = true;
+  api('restoreDeleted', { id: btn.getAttribute('data-restore') }).then(function(r){
+    if(!r || !r.ok){ btn.disabled = false; toast('Could not restore: ' + esc((r && r.error) || ''), 'err', 6000); return; }
+    toast('Restored <b>' + esc(r.product['Product Name']) + '</b>', 'ok');
+    btn.closest('.logrow').remove();
+    refresh(true);
+  }).catch(function(err){ btn.disabled = false; toast('Network error: ' + esc(err.message), 'err'); });
+});
+
 /* ═══ EXPORT / PRINT ═════════════════════════════════════ */
 $('dCsv').onclick = function(){
   drawer(false);
@@ -1398,6 +1514,7 @@ $('verBadge').onclick = function(){
     ownerToken = '';
     $('verBadge').classList.remove('owner');
     $('dBaseline').style.display = 'none';
+    $('dTrash').style.display = 'none';
     toast('Owner mode off.', 'ok', 2000);
     return;
   }
@@ -1415,6 +1532,7 @@ function requireOwner(then){
     ownerToken = r.token;
     $('verBadge').classList.add('owner');
     $('dBaseline').style.display = 'flex';
+    $('dTrash').style.display = 'flex';
     then();
   }).catch(function(err){ loading(false); toast('Network error: ' + esc(err.message), 'err'); });
 }
