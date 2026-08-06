@@ -110,6 +110,17 @@ ever touch `isLocal()`.
 The social-preview banner, favicon and manifest stay public even with a PIN set, so a
 shared link still shows a proper card.
 
+⚠ **Never mark a gated response `Cache-Control: public`.** Cloudflare is a shared cache and
+will happily store anything so labelled, then serve it to callers who never passed the PIN —
+straight from its edge, without the request ever reaching this laptop. Product photos were
+sent as `public, max-age=31536000, immutable` and were being served unauthenticated with
+`cf-cache-status: HIT`. They are now `private, max-age=86400`: the phone's own browser still
+caches them (which matters on mobile data), but no shared cache may. Everything else the
+server hands out defaults to `private, no-store`; only `PUBLIC_PATHS` is `public`.
+**If a photo URL was ever served as `public`, the copy already sitting in Cloudflare's edge
+survives the header change** — purge it once from the Cloudflare dashboard
+(Caching → Configuration → Purge Everything), or it keeps being served until its TTL expires.
+
 **The push key is never committed.** This repo and Order Processing's are both public, so
 the key is stored per device in `localStorage` instead: in Order Processing, tap the version
 badge to unlock Owner Mode and it offers to link the device once. A device without the key
