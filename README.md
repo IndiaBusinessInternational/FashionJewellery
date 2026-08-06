@@ -4,24 +4,58 @@ Imitation / fashion jewellery stock register for **India Business International*
 photos, quantities and wholesale prices, with stock **deducted automatically when a
 sale is processed in [IBI Order Processing](https://orders.indiabusinessinternational.online/)**.
 
-**Live:** https://jewellery.indiabusinessinternational.online/
+**The laptop is the server.** There is no cloud backend and no database service: a small
+Node server in `Backend\` serves the app and keeps every record on the machine under
+`Backend\data\`. Same arrangement as IBI Social Flow.
 
 ---
 
-## What is where
+## Running it
 
-| Path | What it is |
+Double-click **`START-JEWELLERY.bat`**. It opens the app and leaves a black window running —
+**closing that window stops the server.**
+
+| Where | URL |
 |---|---|
-| `index.html` | The whole app — single file, PWA, no build step |
-| `manifest.json`, `sw.js` | PWA install + offline shell |
-| `og-banner.png` | 1200×630 social preview |
-| `CNAME` | Custom domain for GitHub Pages |
-| `Backend/IBIFashionJewellery_GAS.gs` | **Apps Script backend — LOCAL MIRROR, never committed** |
-| `Backend/IBIFashionJewellery_appsscript.json` | Manifest for that Apps Script project |
+| On the laptop | `http://localhost:3100` |
+| Another device on the same Wi-Fi | `http://<laptop-ip>:3100` — needs `accessPin` |
+| Anywhere | `https://jewellery.indiabusinessinternational.online` — needs the Cloudflare Tunnel |
 
-> ⚠ **The `.gs` must never be committed.** GitHub Pages serves every file in the repo,
-> so a published backend would expose the owner PIN. `Backend/` and `*.gs` are in
-> `.gitignore`. Edit the mirror here, then paste it into the Apps Script editor.
+**Start it automatically at logon:** put a shortcut to `Backend\start-hidden.vbs` in
+`C:\Users\ADMIN\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup`
+(no admin rights needed — the same trick IBI Social Flow uses).
+
+There is **no `npm install`** and no `node_modules`. The server is plain Node with zero
+dependencies, so there is nothing to reinstall or break.
+
+## Settings — `Backend\config.json`
+
+Written with blanks on first start. Edit it, then restart the server.
+
+| Key | What it does |
+|---|---|
+| `port` | 3100 by default (3000 belongs to IBI Social Flow) |
+| `accessPin` | **Blank = this laptop only.** The server *refuses* every remote caller while it is blank, so it cannot be left open by accident. Set it before using Wi-Fi or the tunnel. |
+| `ownerPin` | Needed to delete a product or redraw the sale-sync baseline. Blank = those are refused. |
+| `pushKey` | The shared key IBI Order Processing sends with its instant push. Blank = the push is off; the poll below still applies every sale. |
+| `pollMinutes` | How often the laptop checks Order Processing for new sales (5) |
+
+⚠ `config.json` holds the PINs and is never served over HTTP (the whole `Backend\` folder
+is blocked), and `Backend\` is `.gitignore`d so none of it reaches GitHub.
+
+## Where the data lives
+
+```
+Backend\data\products.json    the register
+Backend\data\stocklog.json    every movement, with the reason and the order it came from
+Backend\data\syncstate.json   which sales have already been applied
+Backend\data\images\          product photos
+Backend\data\backups\         one dated snapshot per day, kept 60 days
+```
+
+Plain JSON you can open, read and copy. Writes are atomic (temp file + rename), so a crash
+or a power cut can never leave a half-written register. Menu → **Open Data Folder** jumps
+straight there. To back up, copy `Backend\data\` anywhere.
 
 ## Fields kept per product
 
@@ -29,49 +63,57 @@ Product Name · Image · Quantity in Stock · Wholesale Price · Retail/MRP · S
 Category · Material/Finish · Colour · Size · Weight · Reorder Level · HSN · GST % ·
 Supplier · Purchase Date · Storage Location · Aliases · Notes · Created / Last-Updated stamps.
 
-Product photos are shrunk to 1000 px in the browser and stored in the Drive folder
-**IBI Fashion Jewellery Images**; the sheet holds the shareable thumbnail URL.
+Photos are shrunk to 1000 px in the browser before upload, so the folder stays small.
 
 ## How the automatic stock deduction works
 
-Two independent paths, both idempotent on the key `<Order Serial>|<normalised product name>`
-recorded in the `SyncState` tab — so the same sale can never be deducted twice.
+Two paths, both idempotent on `<order serial>|<normalised product name>` — the same sale can
+never be deducted twice.
 
-1. **Push (instant).** When IBI Order Processing saves an order, it calls this backend's
-   `deductStock` with the product name, quantity and serial number. If the name matches a
-   jewellery item, its stock drops and the movement is logged with the order ID, platform
-   and buyer.
-2. **Pull (catch-up).** The ↻ button — and a quiet pass a few seconds after the app opens —
-   runs `syncOrders`, which re-reads the Orders feed and applies anything the push missed.
-   Optional hourly automation: run `fjInstallSyncTrigger` once in the Apps Script editor.
+1. **Poll (the reliable one).** The laptop reads Order Processing's Orders feed every
+   `pollMinutes` and applies anything sold. This is **outbound only**: it works with no
+   tunnel, needs nothing configured on the other side, and catches up by itself after the
+   laptop has been off.
+2. **Push (the instant one).** When Order Processing saves an order it calls this server
+   directly, so the packer sees the new stock level immediately. Needs the tunnel and a
+   matching `pushKey`. If it fails, path 1 still gets it.
 
-**Baseline.** The very first sync deducts nothing; it just records the highest order
-Serial Number as `SYNC_MAX_SERIAL`, and later runs ignore everything at or below it. So
-switching the link on does not wipe the register with months of history — and, importantly,
-a product added to the register *next month* does not suddenly match old orders and
-retro-deduct them. Owner Mode → *Reset Sale-Sync Baseline* re-draws the line at today.
+**Baseline.** The first run deducts nothing; it records the highest order Serial Number and
+later runs ignore everything at or below it. A cutoff rather than a list of applied keys
+matters — add a product to the register *next month* and months of old orders would
+otherwise start matching its name and drain it. Owner Mode → *Reset Sale-Sync Baseline*
+re-draws the line at today.
 
 **Matching** is case/punctuation-insensitive on the product name, then SKU, then the
 `Aliases` field (marketplace titles, separated by `|`), and finally an *unambiguous*
-containment match. Anything ambiguous is left alone rather than guessed at. Names entered
-in Order Processing come from a picker that includes this register, so exact matches are
-the norm. Stock never goes below zero — an oversell is clamped and flagged in the log.
+containment match — anything ambiguous is left alone rather than guessed at. Order
+Processing's product picker is fed from this register, so exact matches are the norm.
+Stock never goes below zero; an oversell is clamped and flagged in the log.
 
-## Setup (once)
+## Reaching it from outside the laptop
 
-1. script.google.com → new project → paste `Backend/IBIFashionJewellery_GAS.gs` → Save.
-2. Run `fjSetup` → Allow. It creates the Sheet and the Drive image folder and logs both links.
-3. Project Settings → Script Properties → `OWNER_PIN` = a **new** PIN (never `8899`).
-4. Deploy → New deployment → Web app → *Execute as* **Me**, *Access* **Anyone** → copy the `/exec` URL.
-5. Open the app → Menu → **Backend Connection** → paste the URL.
-6. Press ↻ once to set the baseline.
-7. Tell IBI Order Processing about it: paste the same `/exec` URL into `FJ_GAS_URL` in
-   its `index.html` (it is already wired to call `deductStock`).
+1. Set `accessPin` in `Backend\config.json` and restart. (Until you do, remote callers are
+   refused — deliberately.)
+2. Add the hostname to the existing Cloudflare Tunnel: see
+   `Backend\cloudflared-config-SAMPLE.yml` for the exact command and ingress block.
+3. Set `pushKey` too, then put the same URL and key into IBI Order Processing's
+   `index.html` (`FJ_API_URL`, `FJ_PUSH_KEY`) so the instant push works.
 
-After **any** edit to the `.gs`: paste it back, then **Deploy → Manage deployments → Edit →
-New version**. That keeps the same `/exec` URL. Verify with `<exec-url>?action=ping`.
+The social-preview banner, favicon and manifest stay public even with a PIN set, so a
+shared link still shows a proper card.
+
+## What is in the repo vs on the laptop
+
+The GitHub repo (`IndiaBusinessInternational/FashionJewellery`) holds only the front end —
+`index.html`, `manifest.json`, `sw.js`, `og-banner.png`. The whole `Backend\` folder, the
+data and the PINs stay on the laptop. The GitHub Pages copy has no server behind it and
+will just say so; the real app is the one the laptop serves.
+
+`Backend\unused-google-apps-script\` is the earlier cloud version, kept as a fallback. It is
+not running — do not deploy it alongside this, or the two stores would drift apart.
 
 ## Versioning
 
-The badge at the top-left is the release marker. Bump it on **every** deploy —
-`.ver-badge`, the footer line, the drawer "Version" line, `APP_VERSION`, and `CACHE` in `sw.js`.
+The badge at the top-left is the release marker. Bump it on **every** change —
+`.ver-badge`, the footer line, the drawer "Version" line, `APP_VERSION`, and `CACHE` in
+`sw.js`. `SERVER_VERSION` in `Backend\server.js` is tracked separately.

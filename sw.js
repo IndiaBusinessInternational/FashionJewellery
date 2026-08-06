@@ -1,6 +1,6 @@
 /* IBI Fashion Jewellery — service worker
    Bump CACHE on every release so a stale copy never outlives a deploy. */
-const CACHE = 'ibi-fashion-jewellery-v1.0';
+const CACHE = 'ibi-fashion-jewellery-v2.0';
 const ASSETS = ['./index.html', './manifest.json'];
 
 self.addEventListener('install', e => {
@@ -17,12 +17,14 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   const u = e.request.url;
-  if (u.includes('script.google.com') ||
-      u.includes('googleusercontent.com') ||
-      u.includes('drive.google.com') ||
+  // The laptop server's API and product photos must never come from a cache,
+  // or a stale stock figure could outlive a sale.
+  if (e.request.method !== 'GET' ||
+      u.includes('/api') ||
+      u.includes('/images/') ||
       u.includes('fonts.googleapis.com') ||
       u.includes('fonts.gstatic.com')) {
-    return; // always live: backend, Drive images, fonts
+    return;
   }
   // Network-first, so a fresh push is served even at the same version.
   e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));

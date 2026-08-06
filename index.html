@@ -411,7 +411,7 @@ footer b{color:var(--cyan);}
       <small>Imitation Jewellery Stock</small>
     </div>
   </div>
-  <span class="ver-badge" id="verBadge" title="Tap for Owner Mode">v1.0</span>
+  <span class="ver-badge" id="verBadge" title="Tap for Owner Mode">v2.0</span>
   <span class="spacer"></span>
   <button class="icon-btn" id="syncBtn" title="Sync sales from IBI Order Processing">&#8635;</button>
   <button class="icon-btn" id="themeBtn" title="Light / dark">&#9680;</button>
@@ -420,22 +420,17 @@ footer b{color:var(--cyan);}
 
 <div class="wrap">
 
-  <!-- Backend not connected yet -->
+  <!-- Shown only if the laptop server stops answering -->
   <div class="setup" id="setupCard">
-    <h3>&#9888; Backend not connected</h3>
-    <p>This app stores everything in your own Google Sheet through an Apps Script web app. Connect it once:</p>
+    <h3>&#9888; The laptop server is not responding</h3>
+    <p>This app is served by the laptop itself, and every record lives on it under
+       <code>IBI Fashion Jewellery\Backend\data\</code>. Nothing is lost — the page just cannot reach the server.</p>
     <ol>
-      <li>Open <code>Backend\IBIFashionJewellery_GAS.gs</code> from the app folder on the laptop and paste it into a new project at <b>script.google.com</b>.</li>
-      <li>Run <code>fjSetup</code> once and click <b>Allow</b> — it creates the Sheet and the Drive image folder.</li>
-      <li>Project Settings &rarr; Script Properties &rarr; add <code>OWNER_PIN</code>.</li>
-      <li>Deploy &rarr; New deployment &rarr; Web app &rarr; Execute as <b>Me</b>, access <b>Anyone</b>.</li>
-      <li>Copy the <code>/exec</code> URL and paste it below.</li>
+      <li>On the laptop, double-click <code>START-JEWELLERY.bat</code> in the app folder.</li>
+      <li>Leave the black window open — closing it stops the server.</li>
+      <li>Then press Retry below.</li>
     </ol>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;">
-      <input id="setupUrl" placeholder="https://script.google.com/macros/s/.../exec"
-             style="flex:1 1 240px;padding:9px 11px;border-radius:9px;background:var(--bg2);border:1px solid var(--border);color:var(--text);font-size:12.5px;">
-      <button class="btn gold" id="setupSave">Connect</button>
-    </div>
+    <button class="btn gold" id="setupRetry">Retry</button>
   </div>
 
   <!-- KPIs -->
@@ -478,7 +473,8 @@ footer b{color:var(--cyan);}
 <button class="fab" id="fab">&#43; Add</button>
 
 <footer>
-  <b>IBI Fashion Jewellery v1.0</b> &middot; India Business International<br>
+  <b>IBI Fashion Jewellery v2.0</b> &middot; India Business International<br>
+  Served from this laptop &middot; records kept locally in <b>Backend\data\</b>.<br>
   Stock is deducted automatically when a sale is saved in <b>IBI Order Processing</b>.<br>
   <span id="footStat"></span>
 </footer>
@@ -507,7 +503,7 @@ footer b{color:var(--cyan);}
               <input type="file" id="pFile" accept="image/*">
               <button class="btn" type="button" id="pPickBtn">&#128247; Choose / take a photo</button>
               <input id="pImgUrl" placeholder="…or paste an image URL" autocomplete="off">
-              <div class="hint" id="pImgHint">Photos are shrunk to 1000&nbsp;px and stored in your Drive folder <b>IBI Fashion Jewellery Images</b>.</div>
+              <div class="hint" id="pImgHint">Photos are shrunk to 1000&nbsp;px and saved on this laptop under <b>Backend\data\images\</b>.</div>
             </div>
           </div>
         </div>
@@ -672,13 +668,12 @@ footer b{color:var(--cyan);}
     <button class="ditem" id="dLog"><span class="di">&#128220;</span><span>Stock Movement Log<small>Every change, with who and why</small></span></button>
     <button class="ditem" id="dCsv"><span class="di">&#11015;</span><span>Export CSV<small>Full register as a spreadsheet</small></span></button>
     <button class="ditem" id="dPrint"><span class="di">&#128424;</span><span>Print / Save PDF<small>Current filtered list</small></span></button>
-    <a class="ditem" id="dSheet" href="#" target="_blank" rel="noopener"><span class="di">&#128202;</span><span>Open Google Sheet<small>The live data behind this app</small></span></a>
+    <button class="ditem" id="dFolder"><span class="di">&#128193;</span><span>Open Data Folder<small>Backend\data\ on this laptop — the real records</small></span></button>
     <a class="ditem" href="https://orders.indiabusinessinternational.online/" target="_blank" rel="noopener"><span class="di">&#128230;</span><span>IBI Order Processing<small>Where sales are recorded</small></span></a>
-    <button class="ditem" id="dBackend"><span class="di">&#128279;</span><span>Backend Connection<small id="dBackendSub">Set the Apps Script /exec URL</small></span></button>
     <button class="ditem" id="dBaseline" style="display:none;"><span class="di">&#9878;</span><span>Reset Sale-Sync Baseline<small>Owner only — re-mark today as the starting point</small></span></button>
-    <div style="margin-top:14px;padding:11px;border-radius:11px;background:var(--bg2);border:1px solid var(--border);font-size:11px;color:var(--text-muted);line-height:1.7;">
-      <b style="color:var(--cyan);">Version v1.0</b><br>
-      <span id="dPing">Backend: not connected</span>
+    <div style="margin-top:14px;padding:11px;border-radius:11px;background:var(--bg2);border:1px solid var(--border);font-size:11px;color:var(--text-muted);line-height:1.7;word-break:break-word;">
+      <b style="color:var(--cyan);">Version v2.0</b> &middot; this laptop is the server<br>
+      <span id="dPing">Server: checking…</span>
     </div>
   </div>
 </div>
@@ -691,13 +686,13 @@ footer b{color:var(--cyan);}
    IBI FASHION JEWELLERY  —  front end
    Version badge lives in: .ver-badge, footer, drawer "Version" line, sw.js
    ═══════════════════════════════════════════════════════════════════════════ */
-var APP_VERSION = "v1.0";
+var APP_VERSION = "v2.0";
 
-/* Paste the Apps Script /exec URL here once it is deployed, or leave it blank
-   and set it in the app under Menu → Backend Connection (stored per browser). */
-var DEFAULT_GAS_URL = "";
+/* The laptop is the server. This page is served by Backend\server.js, so the
+   API is same-origin — there is nothing to configure and no cloud backend.
+   Everything lives under Backend\data\ on the laptop. */
+var API_PATH = '/api';
 
-var LS_URL    = 'ibi_fj_gas_url';
 var LS_CACHE  = 'ibi_fj_cache';
 var LS_THEME  = 'ibi_fj_theme';
 var LS_VIEW   = 'ibi_fj_view';
@@ -710,7 +705,7 @@ var MATERIALS = ['Gold Plated','Rose Gold Plated','Silver Plated','Oxidised','Am
   'Kundan','Polki','Meenakari','Temple / Antique','Pearl','Beads','Stone Studded','Thread / Silk',
   'Terracotta','Brass','Copper','Alloy','Stainless Steel','Acrylic','Resin','Wood','Others'];
 
-var products = [], filtered = [], ownerToken = '', sheetUrl = '';
+var products = [], filtered = [], ownerToken = '', dataDir = '';
 var view = localStorage.getItem(LS_VIEW) || 'grid';
 var pendingImage = null;   // { data, mime } captured from the file picker
 
@@ -725,7 +720,6 @@ function money(n){
   if(isNaN(v)) return '';
   return '₹' + v.toLocaleString('en-IN',{maximumFractionDigits:2});
 }
-function gasUrl(){ return (localStorage.getItem(LS_URL) || DEFAULT_GAS_URL || '').trim(); }
 function loading(on){ $('loader').classList.toggle('on', !!on); }
 
 function toast(msg, kind, ms){
@@ -739,19 +733,20 @@ function toast(msg, kind, ms){
   }, ms || 4200);
 }
 
-/* Apps Script talks JSON over a text/plain POST — a "simple" request, so the
-   browser skips the CORS preflight that /exec would reject. */
+/* Same-origin call to the laptop's own server — no CORS, no keys, no cloud. */
 function api(action, payload){
-  var url = gasUrl();
-  if(!url) return Promise.reject(new Error('Backend not connected. Menu → Backend Connection.'));
   var body = payload || {};
   body.action = action;
   if(ownerToken) body.token = ownerToken;
-  return fetch(url, {
+  return fetch(API_PATH, {
     method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'same-origin',
     body: JSON.stringify(body)
-  }).then(function(r){ return r.json(); });
+  }).then(function(r){
+    if(r.status === 401){ location.reload(); throw new Error('Session expired'); }
+    return r.json();
+  });
 }
 
 /* ── theme ───────────────────────────────────────────────── */
@@ -795,11 +790,6 @@ function boot(){
   fillSelect($('pMaterial'), MATERIALS, '—');
   applyViewLabel();
 
-  if(!gasUrl()){
-    $('setupCard').style.display = 'block';
-    renderAll();
-    return;
-  }
   var cached = null;
   try { cached = JSON.parse(localStorage.getItem(LS_CACHE) || 'null'); } catch(e){}
   if(cached && cached.products){ products = cached.products; renderAll(); }
@@ -811,33 +801,39 @@ function boot(){
 function ping(){
   api('ping', {}).then(function(r){
     if(r && r.ok){
-      sheetUrl = r.sheetUrl || '';
-      if(sheetUrl) $('dSheet').href = sheetUrl;
-      $('dPing').innerHTML = 'Backend: <b style="color:var(--ok);">' + esc(r.version) + ' connected</b>'
-        + (r.ownerPinConfigured ? '' : '<br><span style="color:var(--warn);">OWNER_PIN not set on the server</span>')
-        + (r.syncBaselineDone ? '' : '<br><span style="color:var(--warn);">Sale sync not baselined yet</span>');
-      $('footStat').textContent = 'Backend ' + r.version + ' · sheet connected';
+      dataDir = r.dataDir || '';
+      $('dPing').innerHTML = 'Server: <b style="color:var(--ok);">' + esc(r.version) + ' running on ' + esc(r.host) + '</b>'
+        + '<br>Data: <code style="font-size:10px;">' + esc(r.dataDir) + '</code>'
+        + (r.ownerPinConfigured ? '' : '<br><span style="color:var(--warn);">ownerPin not set — delete is disabled</span>')
+        + (r.syncBaselineDone
+            ? '<br>Sale sync live, cutoff serial ' + esc(r.cutoffSerial)
+            : '<br><span style="color:var(--warn);">Sale sync not baselined yet</span>')
+        + (r.lastPoll
+            ? '<br>Last check: ' + esc(r.lastPoll.at) + (r.lastPoll.ok ? '' : ' <span style="color:var(--bad);">failed</span>')
+            : '');
+      $('footStat').textContent = 'Served from this laptop · server ' + r.version
+        + ' · ' + r.products + ' products stored locally';
     }
   }).catch(function(){
-    $('dPing').innerHTML = 'Backend: <b style="color:var(--bad);">unreachable</b>';
+    $('dPing').innerHTML = 'Server: <b style="color:var(--bad);">not responding</b>';
+    $('setupCard').style.display = 'block';
   });
 }
 
 function refresh(quiet){
-  if(!gasUrl()) return Promise.resolve();
   if(!quiet) loading(true);
   return api('getAll', {}).then(function(r){
     loading(false);
     if(!r || !r.ok){ toast('Could not load: ' + esc((r&&r.error)||'unknown error'), 'err'); return; }
     products = r.products || [];
-    sheetUrl = r.sheetUrl || sheetUrl;
-    if(sheetUrl) $('dSheet').href = sheetUrl;
+    dataDir = r.dataDir || dataDir;
     try { localStorage.setItem(LS_CACHE, JSON.stringify({ products: products, at: Date.now() })); } catch(e){}
     $('setupCard').style.display = 'none';
     renderAll();
   }).catch(function(err){
     loading(false);
-    toast('Network problem — showing the last saved copy.<br><small>' + esc(err.message) + '</small>', 'warn');
+    $('setupCard').style.display = 'block';
+    toast('The laptop server is not responding — showing the last saved copy.<br><small>' + esc(err.message) + '</small>', 'warn');
   });
 }
 
@@ -991,9 +987,7 @@ function renderEmpty(){
   $('listArea').innerHTML = '<div class="empty"><div class="big">&#128142;</div>'
     + (any
        ? 'No product matches these filters.<br><small>Try clearing the search or the category.</small>'
-       : (gasUrl()
-          ? 'No jewellery on the register yet.<br><small>Tap <b>+ Add Product</b> to enter your first piece.</small>'
-          : 'Connect the backend above to get started.'))
+       : 'No jewellery on the register yet.<br><small>Tap <b>+ Add Product</b> to enter your first piece.</small>')
     + '</div>';
 }
 
@@ -1089,7 +1083,7 @@ $('pFile').addEventListener('change', function(){
     setPreview(dataUrl);
     $('pImgUrl').value = '';
     var kb = Math.round(dataUrl.length * 0.73 / 1024);
-    $('pImgHint').innerHTML = 'Photo ready (~' + kb + ' KB). It uploads to Drive when you save.';
+    $('pImgHint').innerHTML = 'Photo ready (~' + kb + ' KB). It is saved on the laptop when you save.';
   }).catch(function(){
     $('pImgHint').textContent = 'Could not read that image — try another file.';
   });
@@ -1232,29 +1226,11 @@ $('aSave').onclick = function(){
 };
 
 /* ═══ SALE SYNC  ←  IBI ORDER PROCESSING ═════════════════
-   Preferred path: the backend reads the Orders feed itself.
-   Fallback: if Apps Script cannot make the outbound call, this browser
-   fetches the feed by JSONP (no CORS) and posts the rows across. ═══ */
-var ORDERS_FEED = 'https://script.google.com/macros/s/AKfycbydsL-wCm-oJzXNEBf58q7FkM8JehYijkkiBd8NuzJScjIQ4beR06FSFNdLnZT_yEDq/exec';
-
+   The laptop server does the work: it reads the Orders feed itself, on a
+   timer, and applies anything sold. This button just asks it to check now. */
 function syncSales(silent){
-  if(!gasUrl()){ if(!silent) toast('Connect the backend first.', 'err'); return; }
   $('syncBtn').classList.add('busy');
   api('syncOrders', {}).then(function(r){
-    if(r && r.ok) return r;
-    return jsonp(ORDERS_FEED).then(function(feed){
-      var orders = (feed.orders || []).map(function(o){
-        return {
-          'Serial Number': o['Serial Number'],
-          'Product Name':  o['Product Name'],
-          'Order ID':      o['Order ID'],
-          'Platform':      o['Platform'],
-          'Name of Buyer': o['Name of Buyer']
-        };
-      });
-      return api('syncOrders', { orders: orders });
-    });
-  }).then(function(r){
     $('syncBtn').classList.remove('busy');
     if(!r || !r.ok){ if(!silent) toast('Sync failed: ' + esc((r && r.error) || ''), 'err', 6000); return; }
     if(r.baseline){
@@ -1270,24 +1246,6 @@ function syncSales(silent){
   }).catch(function(err){
     $('syncBtn').classList.remove('busy');
     if(!silent) toast('Sync error: ' + esc(err.message), 'err', 6000);
-  });
-}
-
-/* JSONP — the Orders backend answers ?callback=fn, which sidesteps CORS. */
-function jsonp(url){
-  return new Promise(function(resolve, reject){
-    var name = 'fjcb_' + Math.random().toString(36).slice(2);
-    var s = document.createElement('script');
-    var done = false;
-    window[name] = function(data){ done = true; cleanup(); resolve(data || {}); };
-    function cleanup(){
-      try { delete window[name]; } catch(e){ window[name] = undefined; }
-      if(s.parentNode) s.parentNode.removeChild(s);
-    }
-    s.onerror = function(){ cleanup(); reject(new Error('Could not reach IBI Order Processing')); };
-    s.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'callback=' + name + '&t=' + Date.now();
-    document.head.appendChild(s);
-    setTimeout(function(){ if(!done){ cleanup(); reject(new Error('Order feed timed out')); } }, 25000);
   });
 }
 
@@ -1363,25 +1321,20 @@ $('dPrint').onclick = function(){
   }, 350);
 };
 
-/* ═══ BACKEND CONNECTION ═════════════════════════════════ */
-function setBackend(url){
-  url = (url || '').trim();
-  if(url && !/^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec/.test(url)){
-    toast('That does not look like an Apps Script <b>/exec</b> URL.', 'err', 6000);
-    return false;
-  }
-  localStorage.setItem(LS_URL, url);
-  toast(url ? 'Backend connected — loading…' : 'Backend URL cleared.', 'ok');
-  if(url){ $('setupCard').style.display = 'none'; refresh(); ping(); }
-  return true;
-}
-$('setupSave').onclick = function(){ setBackend($('setupUrl').value); };
-$('dBackend').onclick = function(){
-  var cur = gasUrl();
-  var v = prompt('Apps Script /exec URL for IBI Fashion Jewellery:\n\n(leave blank to disconnect)', cur);
-  if(v === null) return;
+/* ═══ SERVER / DATA FOLDER ═══════════════════════════════ */
+$('setupRetry').onclick = function(){
+  $('setupCard').style.display = 'none';
+  refresh(); ping();
+};
+$('dFolder').onclick = function(){
   drawer(false);
-  setBackend(v);
+  api('openDataFolder', {}).then(function(r){
+    toast(r && r.ok
+      ? 'Opened <b>' + esc(r.dataDir) + '</b> on the laptop.'
+      : 'Data folder: <b>' + esc(dataDir) + '</b>', 'ok', 6000);
+  }).catch(function(){
+    toast('Data folder: <b>' + esc(dataDir) + '</b>', 'ok', 6000);
+  });
 };
 
 /* ═══ OWNER MODE ═════════════════════════════════════════ */
@@ -1430,7 +1383,7 @@ boot();
 
 /* Quiet catch-up pass a few seconds after opening, so a sale saved on another
    device shows up here without anyone pressing anything. */
-setTimeout(function(){ if(gasUrl()) syncSales(true); }, 4000);
+setTimeout(function(){ syncSales(true); }, 4000);
 
 if('serviceWorker' in navigator){
   window.addEventListener('load', function(){
