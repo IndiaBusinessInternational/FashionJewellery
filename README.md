@@ -21,9 +21,9 @@ Double-click **`START-JEWELLERY.bat`**. It opens the app and leaves a black wind
 | Another device on the same Wi-Fi | `http://<laptop-ip>:3100` — needs `accessPin` |
 | Anywhere | `https://jewellery.indiabusinessinternational.online` — needs the Cloudflare Tunnel |
 
-**Start it automatically at logon:** put a shortcut to `Backend\start-hidden.vbs` in
-`C:\Users\ADMIN\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup`
-(no admin rights needed — the same trick IBI Social Flow uses).
+**It already starts automatically at logon** — `IBI-FashionJewellery-Server.lnk` in the
+Startup folder runs `Backend\start-hidden.vbs` (no admin rights needed, the same trick IBI
+Social Flow uses). Delete that shortcut to stop it starting by itself.
 
 There is **no `npm install`** and no `node_modules`. The server is plain Node with zero
 dependencies, so there is nothing to reinstall or break.
@@ -90,17 +90,31 @@ containment match — anything ambiguous is left alone rather than guessed at. O
 Processing's product picker is fed from this register, so exact matches are the norm.
 Stock never goes below zero; an oversell is clamped and flagged in the log.
 
-## Reaching it from outside the laptop
+## Reaching it from outside the laptop — already set up
 
-1. Set `accessPin` in `Backend\config.json` and restart. (Until you do, remote callers are
-   refused — deliberately.)
-2. Add the hostname to the existing Cloudflare Tunnel: see
-   `Backend\cloudflared-config-SAMPLE.yml` for the exact command and ingress block.
-3. Set `pushKey` too, then put the same URL and key into IBI Order Processing's
-   `index.html` (`FJ_API_URL`, `FJ_PUSH_KEY`) so the instant push works.
+`https://jewellery.indiabusinessinternational.online` is live, carried by the **existing
+`ibi-socialflow` Cloudflare Tunnel** (one tunnel, several hostnames — nothing new to create
+or autostart). The ingress lives in `C:\Users\ADMIN\.cloudflared\config.yml`;
+`Backend\cloudflared-config-SAMPLE.yml` documents the block and the `tunnel route dns`
+command in case it ever needs rebuilding.
+
+Opening it asks for the **access PIN**, then remembers the device for 12 hours.
+
+⚠ **A loopback socket does not mean "someone at this laptop."** `cloudflared` runs on this
+machine and connects to the server *from* `127.0.0.1`, so every tunnel request looks local.
+The server therefore also checks for Cloudflare's `cf-connecting-ip` / `cf-ray` headers
+before treating a caller as local. Without that check the PIN gate is bypassed by the whole
+internet — it was, until testing against the real tunnel caught it. Keep that check if you
+ever touch `isLocal()`.
 
 The social-preview banner, favicon and manifest stay public even with a PIN set, so a
 shared link still shows a proper card.
+
+**The push key is never committed.** This repo and Order Processing's are both public, so
+the key is stored per device in `localStorage` instead: in Order Processing, tap the version
+badge to unlock Owner Mode and it offers to link the device once. A device without the key
+simply does not push — and loses nothing, because the laptop polls anyway. To change it,
+clear `ibi_fj_push_key` in that browser and unlock Owner Mode again.
 
 ## What is in the repo vs on the laptop
 
