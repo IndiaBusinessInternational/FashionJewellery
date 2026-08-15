@@ -1,10 +1,13 @@
 /* IBI Fashion Jewellery — service worker
    Bump CACHE on every release so a stale copy never outlives a deploy. */
-const CACHE = 'ibi-fashion-jewellery-v2.3';
+const CACHE = 'ibi-fashion-jewellery-v2.4';
 const ASSETS = ['./index.html', './manifest.json'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
+  // cache:'reload' — a plain addAll() goes through the HTTP cache, so a version
+  // bump can quietly precache the OLD page under the NEW cache name.
+  e.waitUntil(caches.open(CACHE).then(c =>
+    c.addAll(ASSETS.map(u => new Request(u, { cache: 'reload' })))));
   self.skipWaiting();
 });
 

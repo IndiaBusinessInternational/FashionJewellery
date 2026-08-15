@@ -435,7 +435,7 @@ footer b{color:var(--cyan);}
       <small>Imitation Jewellery Stock</small>
     </div>
   </div>
-  <span class="ver-badge" id="verBadge" title="Tap for Owner Mode">v2.3</span>
+  <span class="ver-badge" id="verBadge" title="Tap for Owner Mode">v2.4</span>
   <span class="spacer"></span>
   <button class="icon-btn" id="syncBtn" title="Sync sales from IBI Order Processing">&#8635;</button>
   <button class="icon-btn" id="themeBtn" title="Light / dark">&#9680;</button>
@@ -497,7 +497,7 @@ footer b{color:var(--cyan);}
 <button class="fab" id="fab">&#43; Add</button>
 
 <footer>
-  <b>IBI Fashion Jewellery v2.3</b> &middot; India Business International<br>
+  <b>IBI Fashion Jewellery v2.4</b> &middot; India Business International<br>
   Served from this laptop &middot; records kept locally in <b>Backend\data\</b>.<br>
   Stock is deducted automatically when a sale is saved in <b>IBI Order Processing</b>.<br>
   <span id="footStat"></span>
@@ -677,6 +677,55 @@ footer b{color:var(--cyan);}
   </div>
 </div>
 
+<!-- ══ OWNER PIN ══
+     Replaces a bare prompt('Owner PIN:'). A prompt cannot say WHICH PIN is
+     wanted, cannot show why it was refused, cannot be retried without starting
+     over, and cannot be filled by a password manager — which is exactly how
+     "PIN refused." turned into "delete is broken". -->
+<div class="overlay" id="ownerOverlay">
+  <div class="modal" style="max-width:400px;">
+    <div class="mhead"><h2>Owner PIN</h2><span class="x" data-close="ownerOverlay">&times;</span></div>
+    <form id="ownerForm" action="#" method="post">
+      <div class="mbody">
+        <div class="hint" id="ownerWhy" style="margin-bottom:6px;"></div>
+        <div class="hint" style="margin-bottom:14px;">
+          This is the <b>owner</b> PIN, which is <b>not</b> the access PIN used to sign in.
+        </div>
+        <div class="fgrid">
+          <!-- A real username field, pre-filled per app, so the browser files
+               this under its own entry instead of overwriting the access PIN.
+               Same reason the sign-in page carries one. -->
+          <div class="field full">
+            <label for="ownerUser">Username</label>
+            <input id="ownerUser" name="username" type="text" value="IBI-Jewellery-Owner"
+                   autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false" readonly>
+          </div>
+          <div class="field full">
+            <label for="ownerPinInput">Owner PIN</label>
+            <!-- current-password, never "off": "off" is what tells a password
+                 manager not to offer to save it. -->
+            <input id="ownerPinInput" name="password" type="password" inputmode="numeric"
+                   placeholder="Owner PIN" autocomplete="current-password">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:7px;gap:10px;">
+              <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:11.5px;cursor:pointer;margin:0;">
+                <input type="checkbox" id="ownerShow" style="width:auto;margin:0;"> Show PIN
+              </label>
+              <span class="hint" style="margin:0;">6 wrong tries pauses PIN entry for 15 minutes.</span>
+            </div>
+          </div>
+        </div>
+        <div id="ownerErr" style="display:none;margin-top:12px;padding:10px 12px;border-radius:10px;
+             background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.45);color:#ef4444;
+             font-size:12px;line-height:1.6;"></div>
+      </div>
+      <div class="mfoot">
+        <button class="btn ghost" type="button" data-close="ownerOverlay">Cancel</button>
+        <button class="btn primary" type="submit" id="ownerGo">Unlock</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- ══ RECENTLY DELETED ══ -->
 <div class="overlay" id="trashOverlay">
   <div class="modal">
@@ -716,7 +765,7 @@ footer b{color:var(--cyan);}
     <button class="ditem" id="dTrash" style="display:none;"><span class="di">&#9851;</span><span>Recently Deleted<small>Owner only — put a deleted product back</small></span></button>
     <button class="ditem" id="dBaseline" style="display:none;"><span class="di">&#9878;</span><span>Reset Sale-Sync Baseline<small>Owner only — re-mark today as the starting point</small></span></button>
     <div style="margin-top:14px;padding:11px;border-radius:11px;background:var(--bg2);border:1px solid var(--border);font-size:11px;color:var(--text-muted);line-height:1.7;word-break:break-word;">
-      <b style="color:var(--cyan);">Version v2.3</b> &middot; this laptop is the server<br>
+      <b style="color:var(--cyan);">Version v2.4</b> &middot; this laptop is the server<br>
       <span id="dPing">Server: checking…</span>
     </div>
   </div>
@@ -730,7 +779,7 @@ footer b{color:var(--cyan);}
    IBI FASHION JEWELLERY  —  front end
    Version badge lives in: .ver-badge, footer, drawer "Version" line, sw.js
    ═══════════════════════════════════════════════════════════════════════════ */
-var APP_VERSION = "v2.3";
+var APP_VERSION = "v2.4";
 
 /* The laptop is the server. This page is served by Backend\server.js, so the
    API is same-origin — there is nothing to configure and no cloud backend.
@@ -840,6 +889,8 @@ document.addEventListener('click', function(e){
 });
 document.addEventListener('keydown', function(e){
   if(e.key === 'Escape'){
+    /* Escaping the owner dialog must also drop whatever it was guarding. */
+    if($('ownerOverlay').classList.contains('open')) ownerPending = null;
     var o = document.querySelectorAll('.overlay.open');
     for(var i=0;i<o.length;i++) o[i].classList.remove('open');
     drawer(false);
@@ -1316,10 +1367,10 @@ $('pDelete').onclick = function(){
       loading(false);
       if(!r || !r.ok){ toast('Delete refused: ' + esc((r && r.error) || ''), 'err'); return; }
       $('prodOverlay').classList.remove('open');
-      toast('Deleted <b>' + esc(p['Product Name']) + '</b>', 'ok');
+      toast('Deleted <b>' + esc(p['Product Name']) + '</b> &mdash; put it back from Menu &rsaquo; Recently Deleted.', 'ok', 7000);
       refresh(true);
     }).catch(function(err){ loading(false); toast('Network error: ' + esc(err.message), 'err'); });
-  });
+  }, 'Deleting <b>' + esc(p['Product Name']) + '</b> needs the owner PIN.');
 };
 
 $('addBtn').onclick = function(){ openProduct(null); };
@@ -1440,7 +1491,7 @@ $('dTrash').onclick = function(){
     }).catch(function(err){
       $('trashBody').innerHTML = '<div class="empty">Could not load.<br><small>' + esc(err.message) + '</small></div>';
     });
-  });
+  }, 'Recently Deleted is owner only.');
 };
 
 $('trashBody').addEventListener('click', function(e){
@@ -1518,24 +1569,79 @@ $('verBadge').onclick = function(){
     toast('Owner mode off.', 'ok', 2000);
     return;
   }
-  requireOwner(function(){ toast('Owner mode on for this session.', 'ok'); });
+  requireOwner(function(){ toast('Owner mode on for this session.', 'ok'); },
+    'Owner Mode unlocks delete, Recently Deleted and the sale-sync baseline.');
 };
 
-function requireOwner(then){
+/* `why` is the thing being unlocked, shown at the top of the dialog, so the
+   PIN box never appears out of nowhere. */
+var ownerPending = null;
+
+function requireOwner(then, why){
   if(ownerToken){ then(); return; }
-  var pin = prompt('Owner PIN:');
-  if(pin === null) return;
-  loading(true);
+  ownerPending = then;
+  $('ownerWhy').innerHTML = why
+    ? why
+    : 'Owner Mode unlocks delete, Recently Deleted and the sale-sync baseline.';
+  ownerError('');
+  $('ownerPinInput').value = '';
+  $('ownerShow').checked = false;
+  $('ownerPinInput').type = 'password';
+  $('ownerGo').disabled = false;
+  $('ownerOverlay').classList.add('open');
+  setTimeout(function(){ $('ownerPinInput').focus(); }, 60);
+}
+
+function ownerError(msg){
+  var box = $('ownerErr');
+  box.innerHTML = msg || '';
+  box.style.display = msg ? 'block' : 'none';
+}
+
+$('ownerShow').onchange = function(){
+  $('ownerPinInput').type = this.checked ? 'text' : 'password';
+  $('ownerPinInput').focus();
+};
+
+/* Cancelling must drop the pending action, or a later unlock would fire it. */
+$('ownerOverlay').addEventListener('click', function(e){
+  if(e.target === this || (e.target.getAttribute && e.target.getAttribute('data-close') === 'ownerOverlay')){
+    ownerPending = null;
+  }
+});
+
+$('ownerForm').onsubmit = function(e){
+  e.preventDefault();
+  var pin = $('ownerPinInput').value.trim();   // phone keyboards love a trailing space
+  if(!pin){ ownerError('Enter the owner PIN.'); $('ownerPinInput').focus(); return; }
+  $('ownerGo').disabled = true;
+  ownerError('');
   api('verifyOwnerPin', { pin: pin }).then(function(r){
-    loading(false);
-    if(!r || !r.ok){ toast('PIN refused' + (r && r.error === 'incorrect' ? '.' : ': ' + esc((r && r.error) || '')), 'err'); return; }
+    $('ownerGo').disabled = false;
+    if(!r || !r.ok){
+      /* Say what is actually wrong. "PIN refused." told the user nothing and
+         left them thinking delete was broken. */
+      var why = (r && r.code === 'throttled') || (r && r.error && r.error !== 'incorrect')
+        ? esc(r.error)
+        : 'That is not the owner PIN. Delete, Recently Deleted and the baseline use the '
+          + '<b>owner</b> PIN &mdash; a different number from the access PIN you sign in with.';
+      ownerError(why);
+      $('ownerPinInput').select();
+      $('ownerPinInput').focus();
+      return;
+    }
     ownerToken = r.token;
     $('verBadge').classList.add('owner');
     $('dBaseline').style.display = 'flex';
     $('dTrash').style.display = 'flex';
-    then();
-  }).catch(function(err){ loading(false); toast('Network error: ' + esc(err.message), 'err'); });
-}
+    $('ownerOverlay').classList.remove('open');
+    var fn = ownerPending; ownerPending = null;
+    if(fn) fn();
+  }).catch(function(err){
+    $('ownerGo').disabled = false;
+    ownerError('Network error: ' + esc(err.message));
+  });
+};
 
 $('dBaseline').onclick = function(){
   drawer(false);
@@ -1548,7 +1654,7 @@ $('dBaseline').onclick = function(){
       toast('Baseline done — <b>' + r.baselined + '</b> historical order' + (r.baselined===1?'':'s') + ' marked as accounted for.', 'ok', 7000);
       ping();
     }).catch(function(err){ loading(false); toast('Network error: ' + esc(err.message), 'err'); });
-  });
+  }, 'Resetting the sale-sync baseline rewrites what counts as already sold, so it needs the owner PIN.');
 };
 
 /* ═══ START ══════════════════════════════════════════════ */
