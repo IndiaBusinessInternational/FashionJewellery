@@ -435,7 +435,7 @@ footer b{color:var(--cyan);}
       <small>Imitation Jewellery Stock</small>
     </div>
   </div>
-  <span class="ver-badge" id="verBadge" title="Tap for Owner Mode">v2.4</span>
+  <span class="ver-badge" id="verBadge" title="Version and server status">v2.5</span>
   <span class="spacer"></span>
   <button class="icon-btn" id="syncBtn" title="Sync sales from IBI Order Processing">&#8635;</button>
   <button class="icon-btn" id="themeBtn" title="Light / dark">&#9680;</button>
@@ -497,7 +497,7 @@ footer b{color:var(--cyan);}
 <button class="fab" id="fab">&#43; Add</button>
 
 <footer>
-  <b>IBI Fashion Jewellery v2.4</b> &middot; India Business International<br>
+  <b>IBI Fashion Jewellery v2.5</b> &middot; India Business International<br>
   Served from this laptop &middot; records kept locally in <b>Backend\data\</b>.<br>
   Stock is deducted automatically when a sale is saved in <b>IBI Order Processing</b>.<br>
   <span id="footStat"></span>
@@ -677,55 +677,6 @@ footer b{color:var(--cyan);}
   </div>
 </div>
 
-<!-- ══ OWNER PIN ══
-     Replaces a bare prompt('Owner PIN:'). A prompt cannot say WHICH PIN is
-     wanted, cannot show why it was refused, cannot be retried without starting
-     over, and cannot be filled by a password manager — which is exactly how
-     "PIN refused." turned into "delete is broken". -->
-<div class="overlay" id="ownerOverlay">
-  <div class="modal" style="max-width:400px;">
-    <div class="mhead"><h2>Owner PIN</h2><span class="x" data-close="ownerOverlay">&times;</span></div>
-    <form id="ownerForm" action="#" method="post">
-      <div class="mbody">
-        <div class="hint" id="ownerWhy" style="margin-bottom:6px;"></div>
-        <div class="hint" style="margin-bottom:14px;">
-          This is the <b>owner</b> PIN, which is <b>not</b> the access PIN used to sign in.
-        </div>
-        <div class="fgrid">
-          <!-- A real username field, pre-filled per app, so the browser files
-               this under its own entry instead of overwriting the access PIN.
-               Same reason the sign-in page carries one. -->
-          <div class="field full">
-            <label for="ownerUser">Username</label>
-            <input id="ownerUser" name="username" type="text" value="IBI-Jewellery-Owner"
-                   autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false" readonly>
-          </div>
-          <div class="field full">
-            <label for="ownerPinInput">Owner PIN</label>
-            <!-- current-password, never "off": "off" is what tells a password
-                 manager not to offer to save it. -->
-            <input id="ownerPinInput" name="password" type="password" inputmode="numeric"
-                   placeholder="Owner PIN" autocomplete="current-password">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:7px;gap:10px;">
-              <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:11.5px;cursor:pointer;margin:0;">
-                <input type="checkbox" id="ownerShow" style="width:auto;margin:0;"> Show PIN
-              </label>
-              <span class="hint" style="margin:0;">6 wrong tries pauses PIN entry for 15 minutes.</span>
-            </div>
-          </div>
-        </div>
-        <div id="ownerErr" style="display:none;margin-top:12px;padding:10px 12px;border-radius:10px;
-             background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.45);color:#ef4444;
-             font-size:12px;line-height:1.6;"></div>
-      </div>
-      <div class="mfoot">
-        <button class="btn ghost" type="button" data-close="ownerOverlay">Cancel</button>
-        <button class="btn primary" type="submit" id="ownerGo">Unlock</button>
-      </div>
-    </form>
-  </div>
-</div>
-
 <!-- ══ RECENTLY DELETED ══ -->
 <div class="overlay" id="trashOverlay">
   <div class="modal">
@@ -762,10 +713,10 @@ footer b{color:var(--cyan);}
     <button class="ditem" id="dPrint"><span class="di">&#128424;</span><span>Print / Save PDF<small>Current filtered list</small></span></button>
     <button class="ditem" id="dFolder"><span class="di">&#128193;</span><span>Open Data Folder<small>Backend\data\ on this laptop — the real records</small></span></button>
     <a class="ditem" href="https://orders.indiabusinessinternational.online/" target="_blank" rel="noopener"><span class="di">&#128230;</span><span>IBI Order Processing<small>Where sales are recorded</small></span></a>
-    <button class="ditem" id="dTrash" style="display:none;"><span class="di">&#9851;</span><span>Recently Deleted<small>Owner only — put a deleted product back</small></span></button>
-    <button class="ditem" id="dBaseline" style="display:none;"><span class="di">&#9878;</span><span>Reset Sale-Sync Baseline<small>Owner only — re-mark today as the starting point</small></span></button>
+    <button class="ditem" id="dTrash"><span class="di">&#9851;</span><span>Recently Deleted<small>Put a deleted product back</small></span></button>
+    <button class="ditem" id="dBaseline"><span class="di">&#9878;</span><span>Reset Sale-Sync Baseline<small>Re-mark today as the starting point</small></span></button>
     <div style="margin-top:14px;padding:11px;border-radius:11px;background:var(--bg2);border:1px solid var(--border);font-size:11px;color:var(--text-muted);line-height:1.7;word-break:break-word;">
-      <b style="color:var(--cyan);">Version v2.4</b> &middot; this laptop is the server<br>
+      <b style="color:var(--cyan);">Version v2.5</b> &middot; this laptop is the server<br>
       <span id="dPing">Server: checking…</span>
     </div>
   </div>
@@ -779,7 +730,7 @@ footer b{color:var(--cyan);}
    IBI FASHION JEWELLERY  —  front end
    Version badge lives in: .ver-badge, footer, drawer "Version" line, sw.js
    ═══════════════════════════════════════════════════════════════════════════ */
-var APP_VERSION = "v2.4";
+var APP_VERSION = "v2.5";
 
 /* The laptop is the server. This page is served by Backend\server.js, so the
    API is same-origin — there is nothing to configure and no cloud backend.
@@ -816,7 +767,7 @@ var NAME_PRESETS = [
   'Invisible Chain Triple Layer'
 ];
 
-var products = [], filtered = [], ownerToken = '', dataDir = '';
+var products = [], filtered = [], dataDir = '';
 var view = localStorage.getItem(LS_VIEW) || 'grid';
 var pendingImage = null;   // { data, mime } captured from the file picker
 
@@ -848,7 +799,6 @@ function toast(msg, kind, ms){
 function api(action, payload){
   var body = payload || {};
   body.action = action;
-  if(ownerToken) body.token = ownerToken;
   return fetch(API_PATH, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -872,10 +822,106 @@ $('themeBtn').onclick = function(){
   localStorage.setItem(LS_THEME, next);
 };
 
-/* ── drawer ──────────────────────────────────────────────── */
+/* ── layers: drawer + every modal ─────────────────────────
+   Opening a photo and pressing Back used to leave the app altogether, because
+   a modal is not a page and the phone's Back button only knows about pages.
+   Every layer now pushes one history entry, so Back closes the photo, then the
+   product, then the drawer — and only leaves the app when nothing is open,
+   which is how every other app on the phone behaves. */
+var layerStack = [];      // [{id, seq}], bottom first
+var layerSeq   = 0;
+
+/* Two things make this fiddly, and both were caught by testing rather than by
+   reading the code:
+   1. history.go() is ASYNC. A menu item closes the drawer and opens a modal in
+      the same click, so the drawer's own back-navigation landed after the modal
+      had opened and shut the modal instead. The unwind is therefore deferred to
+      the end of the tick — and if a layer opens in the meantime it REPLACES that
+      entry instead, which is what a drawer-to-modal hop actually is.
+   2. Counting back-presses drifts, because a queued go() can be dropped. So the
+      popstate handler never counts: it reads the seq stamped on the entry the
+      browser landed on and closes everything opened after it. That is
+      idempotent, so a lost navigation costs nothing. */
+var spend = 0, spendTimer = null;
+
+function showLayer(id, open){
+  if(id === 'drawer'){
+    $('drawer').classList.toggle('open', open);
+    $('scrim').classList.toggle('open', open);
+    return;
+  }
+  var el = $(id);
+  if(el) el.classList.toggle('open', open);
+}
+
+function layerIsOpen(id){
+  return id === 'drawer'
+    ? $('drawer').classList.contains('open')
+    : !!($(id) && $(id).classList.contains('open'));
+}
+
+function layerIndex(id){
+  for(var i = layerStack.length - 1; i >= 0; i--) if(layerStack[i].id === id) return i;
+  return -1;
+}
+
+function openLayer(id){
+  if(layerIndex(id) >= 0) return;
+  var st = { ibiLayer: id, seq: ++layerSeq };
+  try {
+    if(spend > 0){
+      /* A close is already queued this tick — this is a hop, not a new level,
+         so take over the entry we were about to give back. */
+      spend = 0;
+      if(spendTimer){ clearTimeout(spendTimer); spendTimer = null; }
+      history.replaceState(st, '');
+    } else {
+      history.pushState(st, '');
+    }
+  } catch(e){}
+  layerStack.push({ id: id, seq: st.seq });
+  showLayer(id, true);
+}
+
+/* Close a named layer (or the topmost). Hides it immediately, then gives the
+   history entry back at the end of the tick — otherwise Back would later close
+   an already-closed dialog and the app would feel stuck. */
+function closeTop(id){
+  var target = id || (layerStack.length ? layerStack[layerStack.length - 1].id : '');
+  if(!target) return;
+  var i = layerIndex(target);
+  if(i < 0){ showLayer(target, false); return; }   // never pushed: just hide it
+  while(layerStack.length > i) showLayer(layerStack.pop().id, false);
+  spend += 1;
+  if(spendTimer) clearTimeout(spendTimer);
+  spendTimer = setTimeout(function(){
+    var n = spend; spend = 0; spendTimer = null;
+    /* Only ever step back over entries of ours — never off the app's own page. */
+    if(n > 0 && history.state && history.state.ibiLayer){ try { history.go(-n); } catch(e){} }
+  }, 0);
+}
+
+function closeAllLayers(){
+  if(layerStack.length) closeTop(layerStack[0].id);
+}
+
+/* A Back press. The entry we landed on says how much of the stack should still
+   be open; everything opened after it goes. Nothing open means the browser
+   leaves the app, which is correct. */
+window.addEventListener('popstate', function(){
+  var upTo = (history.state && history.state.ibiLayer) ? history.state.seq : 0;
+  while(layerStack.length && layerStack[layerStack.length - 1].seq > upTo){
+    showLayer(layerStack.pop().id, false);
+  }
+});
+
+/* A reload leaves our pushed entries behind in history with an empty stack —
+   drop the marker so Back is not silently swallowed afterwards. */
+if(history.state && history.state.ibiLayer){ try { history.replaceState(null, ''); } catch(e){} }
+
 function drawer(open){
-  $('drawer').classList.toggle('open', open);
-  $('scrim').classList.toggle('open', open);
+  if(open) openLayer('drawer');
+  else if(layerIsOpen('drawer')) closeTop('drawer');
 }
 $('menuBtn').onclick = function(){ drawer(true); };
 $('drawerClose').onclick = function(){ drawer(false); };
@@ -884,17 +930,11 @@ $('scrim').onclick = function(){ drawer(false); };
 /* ── overlays ────────────────────────────────────────────── */
 document.addEventListener('click', function(e){
   var c = e.target.getAttribute && e.target.getAttribute('data-close');
-  if(c) $(c).classList.remove('open');
-  if(e.target.classList && e.target.classList.contains('overlay')) e.target.classList.remove('open');
+  if(c){ closeTop(c); return; }
+  if(e.target.classList && e.target.classList.contains('overlay')) closeTop(e.target.id);
 });
 document.addEventListener('keydown', function(e){
-  if(e.key === 'Escape'){
-    /* Escaping the owner dialog must also drop whatever it was guarding. */
-    if($('ownerOverlay').classList.contains('open')) ownerPending = null;
-    var o = document.querySelectorAll('.overlay.open');
-    for(var i=0;i<o.length;i++) o[i].classList.remove('open');
-    drawer(false);
-  }
+  if(e.key === 'Escape') closeAllLayers();
 });
 
 /* ═══ LOAD ═══════════════════════════════════════════════ */
@@ -918,7 +958,6 @@ function ping(){
       dataDir = r.dataDir || '';
       $('dPing').innerHTML = 'Server: <b style="color:var(--ok);">' + esc(r.version) + ' running on ' + esc(r.host) + '</b>'
         + '<br>Data: <code style="font-size:10px;">' + esc(r.dataDir) + '</code>'
-        + (r.ownerPinConfigured ? '' : '<br><span style="color:var(--warn);">ownerPin not set — delete is disabled</span>')
         + (r.syncBaselineDone
             ? '<br>Sale sync live, cutoff serial ' + esc(r.cutoffSerial)
             : '<br><span style="color:var(--warn);">Sale sync not baselined yet</span>')
@@ -1146,7 +1185,7 @@ $('listArea').addEventListener('click', function(e){
   if(act === 'plus')       quickAdjust(p, +1);
   else if(act === 'minus') quickAdjust(p, -1);
   else if(act === 'adjust')openAdjust(p);
-  else if(act === 'zoom')  { if(p['Image URL']){ $('imgBig').src = p['Image URL']; $('imgOverlay').classList.add('open'); } else openProduct(p); }
+  else if(act === 'zoom')  { if(p['Image URL']){ $('imgBig').src = p['Image URL']; openLayer('imgOverlay'); } else openProduct(p); }
   else if(act === 'edit')  openProduct(p);
 });
 function byId(id){
@@ -1207,7 +1246,7 @@ function openProduct(p){
   setPreview(p ? p['Image URL'] : '');
   markNamePick();
   updateMargin();
-  $('prodOverlay').classList.add('open');
+  openLayer('prodOverlay');
   setTimeout(function(){ $('pName').focus(); }, 60);
 }
 function isoDate(v){
@@ -1348,7 +1387,7 @@ $('pSave').onclick = function(){
       toast('Could not save: ' + esc((r && r.error) || 'unknown error'), 'err', 6000);
       return;
     }
-    $('prodOverlay').classList.remove('open');
+    closeTop('prodOverlay');
     toast((payload.id ? 'Updated' : 'Added') + ' <b>' + esc(name) + '</b>', 'ok');
     refresh(true);
   }).catch(function(err){
@@ -1360,17 +1399,15 @@ $('pSave').onclick = function(){
 $('pDelete').onclick = function(){
   var id = $('pId').value, p = byId(id);
   if(!p) return;
-  if(!confirm('Delete "' + p['Product Name'] + '" from the register?\n\nThe movement history stays in the log.')) return;
-  requireOwner(function(){
-    loading(true);
-    api('delete', { id: id }).then(function(r){
-      loading(false);
-      if(!r || !r.ok){ toast('Delete refused: ' + esc((r && r.error) || ''), 'err'); return; }
-      $('prodOverlay').classList.remove('open');
-      toast('Deleted <b>' + esc(p['Product Name']) + '</b> &mdash; put it back from Menu &rsaquo; Recently Deleted.', 'ok', 7000);
-      refresh(true);
-    }).catch(function(err){ loading(false); toast('Network error: ' + esc(err.message), 'err'); });
-  }, 'Deleting <b>' + esc(p['Product Name']) + '</b> needs the owner PIN.');
+  if(!confirm('Delete "' + p['Product Name'] + '" from the register?\n\nIt moves to Recently Deleted and can be put back. The movement history stays in the log.')) return;
+  loading(true);
+  api('delete', { id: id }).then(function(r){
+    loading(false);
+    if(!r || !r.ok){ toast('Delete refused: ' + esc((r && r.error) || ''), 'err'); return; }
+    closeTop('prodOverlay');
+    toast('Deleted <b>' + esc(p['Product Name']) + '</b> &mdash; put it back from Menu &rsaquo; Recently Deleted.', 'ok', 7000);
+    refresh(true);
+  }).catch(function(err){ loading(false); toast('Network error: ' + esc(err.message), 'err'); });
 };
 
 $('addBtn').onclick = function(){ openProduct(null); };
@@ -1394,7 +1431,7 @@ function openAdjust(p){
     + ' &middot; reorder level ' + p.reorder;
   $('aDelta').value = '';
   $('aNote').value = '';
-  $('adjOverlay').classList.add('open');
+  openLayer('adjOverlay');
   setTimeout(function(){ $('aDelta').focus(); }, 60);
 }
 $('aSave').onclick = function(){
@@ -1405,7 +1442,7 @@ $('aSave').onclick = function(){
     .then(function(r){
       loading(false);
       if(!r || !r.ok){ toast('Could not update: ' + esc((r && r.error) || ''), 'err'); return; }
-      $('adjOverlay').classList.remove('open');
+      closeTop('adjOverlay');
       toast('Stock now <b>' + r.product.qty + '</b> for ' + esc(r.product['Product Name']), 'ok');
       refresh(true);
     }).catch(function(err){ loading(false); toast('Network error: ' + esc(err.message), 'err'); });
@@ -1442,7 +1479,7 @@ $('dSync').onclick   = function(){ drawer(false); syncSales(false); };
 $('dLog').onclick = function(){
   drawer(false);
   $('logBody').innerHTML = '<div class="hint">Loading…</div>';
-  $('logOverlay').classList.add('open');
+  openLayer('logOverlay');
   api('getLog', { limit: 300 }).then(function(r){
     if(!r || !r.ok || !r.entries || !r.entries.length){
       $('logBody').innerHTML = '<div class="empty">No stock movements recorded yet.</div>';
@@ -1473,9 +1510,9 @@ $('dLog').onclick = function(){
 /* ═══ RECENTLY DELETED ═══════════════════════════════════ */
 $('dTrash').onclick = function(){
   drawer(false);
-  requireOwner(function(){
+  (function(){
     $('trashBody').innerHTML = '<div class="hint">Loading…</div>';
-    $('trashOverlay').classList.add('open');
+    openLayer('trashOverlay');
     api('listDeleted', {}).then(function(r){
       if(!r || !r.ok){ $('trashBody').innerHTML = '<div class="empty">' + esc((r && r.error) || 'Could not load.') + '</div>'; return; }
       if(!r.items.length){ $('trashBody').innerHTML = '<div class="empty">Nothing deleted.<br><small>Deleted products are kept here so they can be put back.</small></div>'; return; }
@@ -1491,7 +1528,7 @@ $('dTrash').onclick = function(){
     }).catch(function(err){
       $('trashBody').innerHTML = '<div class="empty">Could not load.<br><small>' + esc(err.message) + '</small></div>';
     });
-  }, 'Recently Deleted is owner only.');
+  })();
 };
 
 $('trashBody').addEventListener('click', function(e){
@@ -1559,102 +1596,23 @@ $('dFolder').onclick = function(){
   });
 };
 
-/* ═══ OWNER MODE ═════════════════════════════════════════ */
+/* ═══ VERSION BADGE ══════════════════════════════════════ */
+/* There is ONE PIN — the sign-in PIN — and nothing behind a second one, so the
+   badge no longer unlocks anything; it just reports what is running. */
 $('verBadge').onclick = function(){
-  if(ownerToken){
-    ownerToken = '';
-    $('verBadge').classList.remove('owner');
-    $('dBaseline').style.display = 'none';
-    $('dTrash').style.display = 'none';
-    toast('Owner mode off.', 'ok', 2000);
-    return;
-  }
-  requireOwner(function(){ toast('Owner mode on for this session.', 'ok'); },
-    'Owner Mode unlocks delete, Recently Deleted and the sale-sync baseline.');
-};
-
-/* `why` is the thing being unlocked, shown at the top of the dialog, so the
-   PIN box never appears out of nowhere. */
-var ownerPending = null;
-
-function requireOwner(then, why){
-  if(ownerToken){ then(); return; }
-  ownerPending = then;
-  $('ownerWhy').innerHTML = why
-    ? why
-    : 'Owner Mode unlocks delete, Recently Deleted and the sale-sync baseline.';
-  ownerError('');
-  $('ownerPinInput').value = '';
-  $('ownerShow').checked = false;
-  $('ownerPinInput').type = 'password';
-  $('ownerGo').disabled = false;
-  $('ownerOverlay').classList.add('open');
-  setTimeout(function(){ $('ownerPinInput').focus(); }, 60);
-}
-
-function ownerError(msg){
-  var box = $('ownerErr');
-  box.innerHTML = msg || '';
-  box.style.display = msg ? 'block' : 'none';
-}
-
-$('ownerShow').onchange = function(){
-  $('ownerPinInput').type = this.checked ? 'text' : 'password';
-  $('ownerPinInput').focus();
-};
-
-/* Cancelling must drop the pending action, or a later unlock would fire it. */
-$('ownerOverlay').addEventListener('click', function(e){
-  if(e.target === this || (e.target.getAttribute && e.target.getAttribute('data-close') === 'ownerOverlay')){
-    ownerPending = null;
-  }
-});
-
-$('ownerForm').onsubmit = function(e){
-  e.preventDefault();
-  var pin = $('ownerPinInput').value.trim();   // phone keyboards love a trailing space
-  if(!pin){ ownerError('Enter the owner PIN.'); $('ownerPinInput').focus(); return; }
-  $('ownerGo').disabled = true;
-  ownerError('');
-  api('verifyOwnerPin', { pin: pin }).then(function(r){
-    $('ownerGo').disabled = false;
-    if(!r || !r.ok){
-      /* Say what is actually wrong. "PIN refused." told the user nothing and
-         left them thinking delete was broken. */
-      var why = (r && r.code === 'throttled') || (r && r.error && r.error !== 'incorrect')
-        ? esc(r.error)
-        : 'That is not the owner PIN. Delete, Recently Deleted and the baseline use the '
-          + '<b>owner</b> PIN &mdash; a different number from the access PIN you sign in with.';
-      ownerError(why);
-      $('ownerPinInput').select();
-      $('ownerPinInput').focus();
-      return;
-    }
-    ownerToken = r.token;
-    $('verBadge').classList.add('owner');
-    $('dBaseline').style.display = 'flex';
-    $('dTrash').style.display = 'flex';
-    $('ownerOverlay').classList.remove('open');
-    var fn = ownerPending; ownerPending = null;
-    if(fn) fn();
-  }).catch(function(err){
-    $('ownerGo').disabled = false;
-    ownerError('Network error: ' + esc(err.message));
-  });
+  toast('IBI Fashion Jewellery <b>' + APP_VERSION + '</b><br>' + esc($('dPing').textContent), 'ok', 5000);
 };
 
 $('dBaseline').onclick = function(){
   drawer(false);
-  requireOwner(function(){
-    if(!confirm('Re-run the baseline?\n\nEvery order currently in IBI Order Processing will be marked as "already accounted for" WITHOUT touching stock. Use this once, when you first switch the link on.')) return;
-    loading(true);
-    api('syncOrders', { baseline: true }).then(function(r){
-      loading(false);
-      if(!r || !r.ok){ toast('Baseline failed: ' + esc((r && r.error) || ''), 'err'); return; }
-      toast('Baseline done — <b>' + r.baselined + '</b> historical order' + (r.baselined===1?'':'s') + ' marked as accounted for.', 'ok', 7000);
-      ping();
-    }).catch(function(err){ loading(false); toast('Network error: ' + esc(err.message), 'err'); });
-  }, 'Resetting the sale-sync baseline rewrites what counts as already sold, so it needs the owner PIN.');
+  if(!confirm('Re-run the baseline?\n\nEvery order currently in IBI Order Processing will be marked as "already accounted for" WITHOUT touching stock. Use this once, when you first switch the link on.')) return;
+  loading(true);
+  api('syncOrders', { baseline: true }).then(function(r){
+    loading(false);
+    if(!r || !r.ok){ toast('Baseline failed: ' + esc((r && r.error) || ''), 'err'); return; }
+    toast('Baseline done — <b>' + r.baselined + '</b> historical order' + (r.baselined===1?'':'s') + ' marked as accounted for.', 'ok', 7000);
+    ping();
+  }).catch(function(err){ loading(false); toast('Network error: ' + esc(err.message), 'err'); });
 };
 
 /* ═══ START ══════════════════════════════════════════════ */

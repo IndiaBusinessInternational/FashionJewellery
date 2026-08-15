@@ -36,7 +36,11 @@ Written with blanks on first start. Edit it, then restart the server.
 |---|---|
 | `port` | 3100 by default (3000 belongs to IBI Social Flow) |
 | `accessPin` | **Blank = this laptop only.** The server *refuses* every remote caller while it is blank, so it cannot be left open by accident. Set it before using Wi-Fi or the tunnel. |
-| `ownerPin` | Needed to delete a product or redraw the sale-sync baseline. Blank = those are refused. |
+
+**One PIN.** `accessPin` is the whole permission model (server v1.6 / app v2.5). There used to
+be a second `ownerPin` in front of delete, Recently Deleted and the baseline; it was removed at
+the owner's instruction. Signing in — or sitting at this laptop — is enough for everything.
+Delete stays safe because it moves the product to *Recently Deleted*, not to nowhere.
 
 **Saving the PIN in a browser.** The sign-in page carries a real username field, pre-filled
 `IBI-Jewellery`, so a password manager files this app under its own name. Without a username
@@ -100,7 +104,7 @@ never be deducted twice.
 **Baseline.** The first run deducts nothing; it records the highest order Serial Number and
 later runs ignore everything at or below it. A cutoff rather than a list of applied keys
 matters — add a product to the register *next month* and months of old orders would
-otherwise start matching its name and drain it. Owner Mode → *Reset Sale-Sync Baseline*
+otherwise start matching its name and drain it. Menu → *Reset Sale-Sync Baseline*
 re-draws the line at today.
 
 **Matching** is case/punctuation-insensitive on the product name, then SKU, then the

@@ -1,6 +1,6 @@
 /* IBI Fashion Jewellery — service worker
    Bump CACHE on every release so a stale copy never outlives a deploy. */
-const CACHE = 'ibi-fashion-jewellery-v2.4';
+const CACHE = 'ibi-fashion-jewellery-v2.5';
 const ASSETS = ['./index.html', './manifest.json'];
 
 self.addEventListener('install', e => {
