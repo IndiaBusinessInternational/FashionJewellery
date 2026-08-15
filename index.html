@@ -2,7 +2,10 @@
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<!-- interactive-widget=resizes-content: the on-screen keyboard then shrinks the
+     viewport instead of sliding over it, so a pinned Save button stays above the
+     keys while a field is being typed into. -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
 <title>IBI Fashion Jewellery</title>
 <!-- Open Graph / social sharing -->
 <meta property="og:type" content="website">
@@ -247,30 +250,51 @@ td img{width:38px;height:38px;object-fit:cover;border-radius:7px;display:block;}
 .empty .big{font-size:44px;opacity:.3;margin-bottom:10px;}
 
 /* ── MODAL ───────────────────────────────────────────────── */
+/* The buttons stay put and only the FIELDS scroll. Before this the whole modal
+   grew with its content and the footer went with it, so on a phone Save sat
+   under the browser's own bars — and further still once the keyboard was up.
+   ⚠ 100dvh, not 100vh: on a phone vh means the viewport with the URL bar
+   HIDDEN, so a vh-sized dialog is always taller than what you can see. */
 .overlay{
-  position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(4px);
-  z-index:200;display:none;align-items:flex-start;justify-content:center;
-  padding:16px;overflow-y:auto;
+  position:fixed;inset:0;height:100vh;height:100dvh;
+  background:rgba(0,0,0,.72);backdrop-filter:blur(4px);
+  z-index:200;display:none;align-items:center;justify-content:center;
+  padding:16px calc(16px + env(safe-area-inset-right))
+          calc(16px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
+  overflow:hidden;
 }
 .overlay.open{display:flex;}
 .modal{
   width:100%;max-width:640px;background:var(--card);border:1px solid var(--border-strong);
   border-radius:17px;box-shadow:var(--shadow);margin:auto;overflow:hidden;
+  display:flex;flex-direction:column;max-height:100%;
 }
 .modal.wide{max-width:940px;}
 .mhead{
+  flex:0 0 auto;
   display:flex;align-items:center;gap:10px;padding:13px 16px;
   background:var(--card2);border-bottom:1px solid var(--border);
 }
 .mhead h2{font-family:"Roboto Condensed",Roboto,sans-serif;font-size:16px;font-weight:900;letter-spacing:.4px;}
 .mhead .x{margin-left:auto;cursor:pointer;font-size:20px;line-height:1;color:var(--text-muted);padding:2px 6px;}
 .mhead .x:hover{color:var(--bad);}
-.mbody{padding:16px;max-height:74vh;overflow-y:auto;}
+.mbody{
+  padding:16px;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  flex:1 1 auto;min-height:0;      /* min-height:0 or a flex child refuses to shrink */
+}
 .mfoot{
+  flex:0 0 auto;
   display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--border);
   background:var(--card2);flex-wrap:wrap;
 }
 .mfoot .btn{flex:1;min-width:110px;justify-content:center;text-align:center;}
+/* Three buttons will not fit across a phone, and wrapping used to push Save
+   onto a second row and out of sight. Save goes full width at the top of the
+   footer instead — the one button that is pressed every time. */
+@media(max-width:430px){
+  .mfoot .btn{min-width:0;flex:1 1 40%;}
+  .mfoot .btn.primary{order:-1;flex:1 1 100%;}
+}
 
 .fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:11px;}
 .field{display:flex;flex-direction:column;gap:4px;}
@@ -435,7 +459,7 @@ footer b{color:var(--cyan);}
       <small>Imitation Jewellery Stock</small>
     </div>
   </div>
-  <span class="ver-badge" id="verBadge" title="Version and server status">v2.5</span>
+  <span class="ver-badge" id="verBadge" title="Version and server status">v2.6</span>
   <span class="spacer"></span>
   <button class="icon-btn" id="syncBtn" title="Sync sales from IBI Order Processing">&#8635;</button>
   <button class="icon-btn" id="themeBtn" title="Light / dark">&#9680;</button>
@@ -497,7 +521,7 @@ footer b{color:var(--cyan);}
 <button class="fab" id="fab">&#43; Add</button>
 
 <footer>
-  <b>IBI Fashion Jewellery v2.5</b> &middot; India Business International<br>
+  <b>IBI Fashion Jewellery v2.6</b> &middot; India Business International<br>
   Served from this laptop &middot; records kept locally in <b>Backend\data\</b>.<br>
   Stock is deducted automatically when a sale is saved in <b>IBI Order Processing</b>.<br>
   <span id="footStat"></span>
@@ -698,7 +722,9 @@ footer b{color:var(--cyan);}
 <!-- ══ IMAGE LIGHTBOX ══ -->
 <div class="overlay" id="imgOverlay">
   <div class="modal" style="max-width:560px;background:transparent;border:none;box-shadow:none;">
-    <img id="imgBig" style="width:100%;border-radius:16px;display:block;" alt="">
+    <!-- max-height, or a portrait photo overflows a modal that now caps at the
+         screen height and the bottom of the picture is simply cut off. -->
+    <img id="imgBig" style="width:100%;max-height:100%;object-fit:contain;border-radius:16px;display:block;" alt="">
   </div>
 </div>
 
@@ -716,7 +742,7 @@ footer b{color:var(--cyan);}
     <button class="ditem" id="dTrash"><span class="di">&#9851;</span><span>Recently Deleted<small>Put a deleted product back</small></span></button>
     <button class="ditem" id="dBaseline"><span class="di">&#9878;</span><span>Reset Sale-Sync Baseline<small>Re-mark today as the starting point</small></span></button>
     <div style="margin-top:14px;padding:11px;border-radius:11px;background:var(--bg2);border:1px solid var(--border);font-size:11px;color:var(--text-muted);line-height:1.7;word-break:break-word;">
-      <b style="color:var(--cyan);">Version v2.5</b> &middot; this laptop is the server<br>
+      <b style="color:var(--cyan);">Version v2.6</b> &middot; this laptop is the server<br>
       <span id="dPing">Server: checking…</span>
     </div>
   </div>
@@ -730,7 +756,7 @@ footer b{color:var(--cyan);}
    IBI FASHION JEWELLERY  —  front end
    Version badge lives in: .ver-badge, footer, drawer "Version" line, sw.js
    ═══════════════════════════════════════════════════════════════════════════ */
-var APP_VERSION = "v2.5";
+var APP_VERSION = "v2.6";
 
 /* The laptop is the server. This page is served by Backend\server.js, so the
    API is same-origin — there is nothing to configure and no cloud backend.
