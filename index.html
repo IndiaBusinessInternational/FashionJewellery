@@ -438,6 +438,49 @@ footer{
 }
 footer b{color:var(--cyan);}
 
+/* ── re-arrange mode ──────────────────────────────────────
+   The whole page steps into a focused mode: filters and stock controls go
+   away, every card grows a position badge and move arrows, and a pinned
+   bottom bar holds Save / Cancel. */
+body.reordering .toolbar,body.reordering .kpis,body.reordering .alertbar,
+body.reordering .fab{display:none!important;}
+body.reordering #listArea{padding-bottom:120px;}
+.rbar{
+  position:fixed;left:0;right:0;bottom:0;z-index:85;display:none;
+  gap:10px;align-items:center;padding:10px 14px;
+  padding-bottom:calc(10px + env(safe-area-inset-bottom));
+  background:var(--card);border-top:1px solid var(--border-strong);
+  box-shadow:0 -8px 24px rgba(0,0,0,.35);
+}
+body.reordering .rbar{display:flex;}
+.rbar .rhint{flex:1;font-size:11.5px;color:var(--text-dim);line-height:1.5;min-width:0;}
+.rbar .rhint b{color:var(--cyan);}
+@media(max-width:430px){
+  .rbar{flex-wrap:wrap;}
+  .rbar .rhint{flex-basis:100%;}
+  .rbar .btn{flex:1;padding:12px;}
+}
+.rcard{cursor:grab;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;}
+.rcard img{pointer-events:none;-webkit-user-drag:none;}
+.rcard.dragging{opacity:.35;}
+.rcard .rpos{
+  position:absolute;bottom:8px;left:8px;min-width:26px;height:26px;padding:0 8px;
+  display:flex;align-items:center;justify-content:center;border-radius:999px;
+  font-size:12.5px;font-weight:800;background:rgba(0,0,0,.6);color:#fff;
+  border:1px solid rgba(255,255,255,.3);
+}
+.rmove{display:flex;gap:6px;margin-top:8px;}
+.rmove button{
+  flex:1;height:36px;border-radius:9px;font-size:16px;font-weight:800;cursor:pointer;
+  background:var(--card2);border:1px solid var(--border);color:var(--text);
+  touch-action:manipulation;
+}
+.rmove button:hover,.rmove button:active{border-color:var(--border-strong);color:var(--cyan);}
+.rghost{
+  position:fixed;z-index:90;pointer-events:none;margin:0;
+  transform:scale(1.05) rotate(1.5deg);box-shadow:0 18px 44px rgba(0,0,0,.5);
+}
+
 @media(max-width:560px){
   .grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:9px;}
   .kpi .v{font-size:20px;}
@@ -445,7 +488,7 @@ footer b{color:var(--cyan);}
   .wrap{padding:11px 9px 90px;}
 }
 @media print{
-  .topbar,.toolbar,.fab,.drawer,.scrim,#toasts,.alertbar,.cedit,.qbtn{display:none!important;}
+  .topbar,.toolbar,.fab,.drawer,.scrim,#toasts,.alertbar,.cedit,.qbtn,.rbar,.rmove,.rpos{display:none!important;}
   body{background:#fff;color:#000;}
 }
 </style>
@@ -469,7 +512,7 @@ footer b{color:var(--cyan);}
       <small>Imitation Jewellery Stock</small>
     </div>
   </div>
-  <span class="ver-badge" id="verBadge" title="Version and server status">v2.8</span>
+  <span class="ver-badge" id="verBadge" title="Version and server status">v2.9</span>
   <span class="spacer"></span>
   <button class="icon-btn" id="syncBtn" title="Sync sales from IBI Order Processing">&#8635;</button>
   <button class="icon-btn" id="themeBtn" title="Light / dark">&#9680;</button>
@@ -514,12 +557,15 @@ footer b{color:var(--cyan);}
     </select>
     <select id="fSort">
       <option value="new">Newest first</option>
+      <option value="old">Oldest first</option>
       <option value="name">Name A–Z</option>
+      <option value="name-desc">Name Z–A</option>
       <option value="qty-asc">Qty: low → high</option>
       <option value="qty-desc">Qty: high → low</option>
       <option value="price-asc">Wholesale: low → high</option>
       <option value="price-desc">Wholesale: high → low</option>
       <option value="value">Stock value</option>
+      <option value="custom">Custom order</option>
     </select>
     <button class="btn ghost" id="viewBtn" title="Grid / table">&#9638; Table</button>
     <button class="btn primary" id="addBtn">+ Add Product</button>
@@ -530,8 +576,16 @@ footer b{color:var(--cyan);}
 
 <button class="fab" id="fab">&#43; Add</button>
 
+<!-- Pinned action bar for re-arrange mode. Same lesson as the modals: the
+     primary action must never sit below the fold on a phone. -->
+<div class="rbar" id="rbar">
+  <span class="rhint"><b>Re-arranging</b> — drag a card (press &amp; hold on the phone) or tap the arrows. Position badges show the order.</span>
+  <button class="btn ghost" id="rCancel">Cancel</button>
+  <button class="btn primary" id="rSave">Save Order</button>
+</div>
+
 <footer>
-  <b>IBI Fashion Jewellery v2.8</b> &middot; India Business International<br>
+  <b>IBI Fashion Jewellery v2.9</b> &middot; India Business International<br>
   Served from this laptop &middot; records kept locally in <b>Backend\data\</b>.<br>
   Stock is deducted automatically when a sale is saved in <b>IBI Order Processing</b>.<br>
   <span id="footStat"></span>
@@ -621,7 +675,7 @@ footer b{color:var(--cyan);}
         </div>
         <div class="field">
           <label>Reorder Level</label>
-          <input id="pReorder" type="number" min="0" step="1" value="3" inputmode="numeric">
+          <input id="pReorder" type="number" min="0" step="1" value="2" inputmode="numeric">
         </div>
         <div class="field">
           <label>HSN</label>
@@ -752,6 +806,7 @@ footer b{color:var(--cyan);}
   <div class="dbody">
     <button class="ditem" id="dSync"><span class="di">&#8635;</span><span>Sync Sales Now<small>Pull processed orders and deduct stock</small></span></button>
     <button class="ditem" id="dLog"><span class="di">&#128220;</span><span>Stock Movement Log<small>Every change, with who and why</small></span></button>
+    <button class="ditem" id="dReorder"><span class="di">&#8645;</span><span>Re-arrange Products<small>Drag cards into your own order — saved for every device</small></span></button>
     <button class="ditem" id="dCsv"><span class="di">&#11015;</span><span>Export CSV<small>Full register as a spreadsheet</small></span></button>
     <button class="ditem" id="dPrint"><span class="di">&#128424;</span><span>Print / Save PDF<small>Current filtered list</small></span></button>
     <button class="ditem" id="dFolder"><span class="di">&#128193;</span><span>Open Data Folder<small>Backend\data\ on this laptop — the real records</small></span></button>
@@ -759,7 +814,7 @@ footer b{color:var(--cyan);}
     <button class="ditem" id="dTrash"><span class="di">&#9851;</span><span>Recently Deleted<small>Put a deleted product back</small></span></button>
     <button class="ditem" id="dBaseline"><span class="di">&#9878;</span><span>Reset Sale-Sync Baseline<small>Re-mark today as the starting point</small></span></button>
     <div style="margin-top:14px;padding:11px;border-radius:11px;background:var(--bg2);border:1px solid var(--border);font-size:11px;color:var(--text-muted);line-height:1.7;word-break:break-word;">
-      <b style="color:var(--cyan);">Version v2.8</b> &middot; this laptop is the server<br>
+      <b style="color:var(--cyan);">Version v2.9</b> &middot; this laptop is the server<br>
       <span id="dPing">Server: checking…</span>
     </div>
   </div>
@@ -773,7 +828,7 @@ footer b{color:var(--cyan);}
    IBI FASHION JEWELLERY  —  front end
    Version badge lives in: .ver-badge, footer, drawer "Version" line, sw.js
    ═══════════════════════════════════════════════════════════════════════════ */
-var APP_VERSION = "v2.8";
+var APP_VERSION = "v2.9";
 
 /* The laptop is the server. This page is served by Backend\server.js, so the
    API is same-origin — there is nothing to configure and no cloud backend.
@@ -783,6 +838,7 @@ var API_PATH = '/api';
 var LS_CACHE  = 'ibi_fj_cache';
 var LS_THEME  = 'ibi_fj_theme';
 var LS_VIEW   = 'ibi_fj_view';
+var LS_SORT   = 'ibi_fj_sort';
 
 var CATEGORIES = ['Earrings','Jhumkas','Studs','Necklace','Necklace Set','Choker','Pendant',
   'Chain','Mangalsutra','Bangles','Bracelet','Kada','Rings','Nose Pin','Anklets','Toe Rings',
@@ -888,6 +944,9 @@ var layerSeq   = 0;
 var spend = 0, spendTimer = null;
 
 function showLayer(id, open){
+  /* Re-arrange mode is a layer too, so the phone's Back button leaves the
+     mode (discarding the unsaved order) instead of leaving the app. */
+  if(id === 'reorder'){ setReorderUI(open); return; }
   if(id === 'drawer'){
     $('drawer').classList.toggle('open', open);
     $('scrim').classList.toggle('open', open);
@@ -898,6 +957,7 @@ function showLayer(id, open){
 }
 
 function layerIsOpen(id){
+  if(id === 'reorder') return reorderOn;
   return id === 'drawer'
     ? $('drawer').classList.contains('open')
     : !!($(id) && $(id).classList.contains('open'));
@@ -987,6 +1047,12 @@ function boot(){
   buildNamePicks();
   applyViewLabel();
 
+  /* The chosen sort survives a reload, the way every catalogue app behaves. */
+  var savedSort = localStorage.getItem(LS_SORT);
+  if(savedSort && $('fSort').querySelector('option[value="' + savedSort + '"]')){
+    $('fSort').value = savedSort;
+  }
+
   var cached = null;
   try { cached = JSON.parse(localStorage.getItem(LS_CACHE) || 'null'); } catch(e){}
   if(cached && cached.products){ products = cached.products; renderAll(); }
@@ -1070,6 +1136,9 @@ function fillSelect(sel, arr, blankLabel){
 
 /* ═══ RENDER ═════════════════════════════════════════════ */
 function renderAll(){
+  /* The server's array order IS the custom order — stamp it so sorting by
+     "Custom order" survives any amount of filtering. */
+  products.forEach(function(p, i){ p._ix = i; });
   buildCatFilter();
   applyFilters();
   renderKpis();
@@ -1137,11 +1206,14 @@ function applyFilters(){
   filtered.sort(function(a, b){
     switch(sort){
       case 'name':       return String(a['Product Name']).localeCompare(String(b['Product Name']));
+      case 'name-desc':  return String(b['Product Name']).localeCompare(String(a['Product Name']));
+      case 'old':        return (a.addedAt||0) - (b.addedAt||0);
       case 'qty-asc':    return a.qty - b.qty;
       case 'qty-desc':   return b.qty - a.qty;
       case 'price-asc':  return (a.wholesale||0) - (b.wholesale||0);
       case 'price-desc': return (b.wholesale||0) - (a.wholesale||0);
       case 'value':      return (b.qty*(b.wholesale||0)) - (a.qty*(a.wholesale||0));
+      case 'custom':     return (a._ix||0) - (b._ix||0);           // saved arrangement
       default:           return (b.addedAt||0) - (a.addedAt||0);   // newest first
     }
   });
@@ -1237,6 +1309,7 @@ $('listArea').addEventListener('touchstart', function(){
 
 $('listArea').addEventListener('click', function(e){
   if(tapStartedDuringScroll || listScrolling){ tapStartedDuringScroll = false; return; }
+  if(reorderOn){ handleReorderClick(e); return; }
   var host = e.target.closest('[data-id]');
   if(!host) return;
   var p = byId(host.getAttribute('data-id'));
@@ -1254,10 +1327,266 @@ function byId(id){
   return null;
 }
 
+/* ═══ RE-ARRANGE MODE ════════════════════════════════════
+   The standard interaction for putting a catalogue in your own order:
+   press-and-hold a card on the phone (a plain touch still scrolls), or just
+   drag with the mouse; arrows on each card give one-tap precision moves; the
+   list auto-scrolls near the screen edges; Save writes the order to the
+   laptop server so every device sees the same arrangement. */
+var reorderOn = false, pendingOrder = [], orderDirty = false;
+
+function enterReorder(){
+  if(!products.length){ toast('Nothing to re-arrange yet.', 'warn'); return; }
+  openLayer('reorder');
+}
+
+/* Called by the layer system — including when the phone's Back button pops
+   the mode, so exit always goes through here exactly once. */
+function setReorderUI(open){
+  if(open === reorderOn) return;
+  reorderOn = open;
+  document.body.classList.toggle('reordering', open);
+  if(open){
+    pendingOrder = products.map(function(p){ return String(p['ID']); });
+    orderDirty = false;
+    renderReorder();
+    window.scrollTo({ top: 0 });
+  } else {
+    endDrag();
+    applyFilters();   // back to the normal list, filters untouched
+  }
+}
+
+function renderReorder(){
+  var map = {};
+  products.forEach(function(p){ map[String(p['ID'])] = p; });
+  $('listArea').innerHTML = '<div class="grid" id="rgrid">'
+    + pendingOrder.map(function(id, i){
+        var p = map[id];
+        return p ? rcardHtml(p, i) : '';
+      }).join('')
+    + '</div>';
+}
+
+function rcardHtml(p, i){
+  var img = p['Image URL'];
+  return '<div class="card rcard" data-id="' + esc(p['ID']) + '">'
+    + '<div class="thumb">'
+      + (img ? '<img loading="lazy" src="' + esc(img) + '" alt="">' : '<div class="ph">&#128142;</div>')
+      + '<span class="rpos">' + (i + 1) + '</span>'
+      + (p['SKU'] ? '<span class="sku">' + esc(p['SKU']) + '</span>' : '')
+    + '</div>'
+    + '<div class="cbody">'
+      + '<div class="cname" title="' + esc(p['Product Name']) + '">' + esc(p['Product Name']) + '</div>'
+      + '<div class="rmove">'
+        + '<button type="button" data-r="start" title="Move to start">&#171;</button>'
+        + '<button type="button" data-r="prev" title="Move earlier">&#8249;</button>'
+        + '<button type="button" data-r="next" title="Move later">&#8250;</button>'
+        + '<button type="button" data-r="end" title="Move to end">&#187;</button>'
+      + '</div>'
+    + '</div></div>';
+}
+
+function handleReorderClick(e){
+  var b = e.target.closest ? e.target.closest('button[data-r]') : null;
+  if(!b) return;
+  var card = b.closest('.rcard');
+  var id = card && card.getAttribute('data-id');
+  var i = pendingOrder.indexOf(id);
+  if(i < 0) return;
+  var r = b.getAttribute('data-r');
+  var last = pendingOrder.length - 1;
+  var j = r === 'start' ? 0 : r === 'end' ? last
+        : r === 'prev' ? Math.max(0, i - 1) : Math.min(last, i + 1);
+  if(j === i) return;
+  pendingOrder.splice(i, 1);
+  pendingOrder.splice(j, 0, id);
+  orderDirty = true;
+  renderReorder();
+  var el = document.querySelector('#rgrid .rcard[data-id="' + id + '"]');
+  if(el) el.scrollIntoView({ block: 'nearest' });
+}
+
+/* Drag proper. Pointer events drive the logic; one non-passive touchmove
+   listener suppresses scrolling only once a drag is actually live, which is
+   what lets press-and-hold coexist with normal scrolling on the same cards. */
+var drag = null;
+
+$('listArea').addEventListener('pointerdown', function(e){
+  if(!reorderOn || drag) return;
+  if(e.target.closest && e.target.closest('button')) return;   // arrows keep their tap
+  var card = e.target.closest ? e.target.closest('.rcard') : null;
+  if(!card) return;
+  drag = {
+    card: card, id: card.getAttribute('data-id'),
+    startX: e.clientX, startY: e.clientY,
+    lastX: e.clientX, lastY: e.clientY,
+    active: false, isTouch: e.pointerType !== 'mouse',
+    timer: null, scrollDy: 0, scrolling: false
+  };
+  if(drag.isTouch){
+    drag.timer = setTimeout(function(){ if(drag && !drag.active) liftCard(); }, 300);
+  }
+});
+
+document.addEventListener('touchmove', function(e){
+  if(drag && drag.active) e.preventDefault();
+}, { passive: false });
+
+$('listArea').addEventListener('contextmenu', function(e){
+  if(reorderOn) e.preventDefault();   // long-press must lift the card, not a menu
+});
+
+window.addEventListener('pointermove', function(e){
+  if(!drag) return;
+  drag.lastX = e.clientX; drag.lastY = e.clientY;
+  if(!drag.active){
+    var dx = e.clientX - drag.startX, dy = e.clientY - drag.startY;
+    var dist = Math.sqrt(dx*dx + dy*dy);
+    if(drag.isTouch){
+      if(dist > 12) endDrag();        // the finger is scrolling — let it
+    } else if(dist > 6){
+      liftCard();
+    }
+    return;
+  }
+  moveGhost();
+  hitTest();
+  autoScroll(e.clientY);
+});
+window.addEventListener('pointerup', dropCard);
+window.addEventListener('pointercancel', endDrag);
+
+function liftCard(){
+  if(!drag || drag.active) return;
+  if(drag.timer){ clearTimeout(drag.timer); drag.timer = null; }
+  drag.active = true;
+  if(navigator.vibrate){ try { navigator.vibrate(15); } catch(e){} }
+  var r = drag.card.getBoundingClientRect();
+  drag.offX = drag.lastX - r.left;
+  drag.offY = drag.lastY - r.top;
+  var g = drag.card.cloneNode(true);
+  g.classList.add('rghost');
+  g.style.width = r.width + 'px';
+  g.style.left = r.left + 'px';
+  g.style.top = r.top + 'px';
+  document.body.appendChild(g);
+  drag.ghost = g;
+  drag.card.classList.add('dragging');
+  moveGhost();
+}
+
+function moveGhost(){
+  if(!drag || !drag.ghost) return;
+  drag.ghost.style.left = (drag.lastX - drag.offX) + 'px';
+  drag.ghost.style.top  = (drag.lastY - drag.offY) + 'px';
+}
+
+/* The ghost is pointer-events:none, so elementFromPoint sees the grid under
+   it. Hovering another card moves the real (dimmed) card next to it, which
+   is the live preview every drag-to-sort UI shows. */
+function hitTest(){
+  if(!drag || !drag.active) return;
+  var el = document.elementFromPoint(drag.lastX, drag.lastY);
+  var over = el && el.closest ? el.closest('#rgrid .rcard') : null;
+  if(!over || over === drag.card) return;
+  var cards = Array.prototype.slice.call(document.querySelectorAll('#rgrid .rcard'));
+  var from = cards.indexOf(drag.card), to = cards.indexOf(over);
+  if(from < 0 || to < 0) return;
+  if(from < to) over.parentNode.insertBefore(drag.card, over.nextSibling);
+  else          over.parentNode.insertBefore(drag.card, over);
+  renumber();
+}
+
+function renumber(){
+  var cards = document.querySelectorAll('#rgrid .rcard');
+  for(var i = 0; i < cards.length; i++){
+    var badge = cards[i].querySelector('.rpos');
+    if(badge) badge.textContent = i + 1;
+  }
+}
+
+function autoScroll(y){
+  if(!drag || !drag.active) return;
+  var m = 80;
+  drag.scrollDy = y < m ? -14 : (y > window.innerHeight - m ? 14 : 0);
+  if(drag.scrollDy && !drag.scrolling){
+    drag.scrolling = true;
+    requestAnimationFrame(scrollStep);
+  }
+}
+function scrollStep(){
+  if(!drag || !drag.active || !drag.scrollDy){
+    if(drag) drag.scrolling = false;
+    return;
+  }
+  window.scrollBy(0, drag.scrollDy);
+  hitTest();
+  requestAnimationFrame(scrollStep);
+}
+
+function dropCard(){
+  if(!drag) return;
+  if(drag.active){
+    var ids = Array.prototype.map.call(
+      document.querySelectorAll('#rgrid .rcard'),
+      function(c){ return c.getAttribute('data-id'); });
+    if(ids.join('') !== pendingOrder.join('')){
+      pendingOrder = ids;
+      orderDirty = true;
+    }
+  }
+  endDrag();
+}
+
+function endDrag(){
+  if(!drag) return;
+  if(drag.timer) clearTimeout(drag.timer);
+  if(drag.ghost && drag.ghost.parentNode) drag.ghost.parentNode.removeChild(drag.ghost);
+  drag.card.classList.remove('dragging');
+  drag = null;
+  renumber();
+}
+
+$('rCancel').onclick = function(){ closeTop('reorder'); };
+$('rSave').onclick = function(){
+  if(!orderDirty){ closeTop('reorder'); return; }
+  loading(true);
+  api('reorder', { ids: pendingOrder }).then(function(r){
+    loading(false);
+    if(!r || !r.ok){
+      toast('Could not save the order: ' + esc((r && r.error) || 'unknown error'), 'err');
+      return;
+    }
+    /* Apply the new order locally at once, then let the server confirm. */
+    var map = {};
+    products.forEach(function(p){ map[String(p['ID'])] = p; });
+    var next = pendingOrder.map(function(id){ return map[id]; }).filter(Boolean);
+    products.forEach(function(p){
+      if(pendingOrder.indexOf(String(p['ID'])) < 0) next.push(p);
+    });
+    products = next;
+    try { localStorage.setItem(LS_CACHE, JSON.stringify({ products: products, at: Date.now() })); } catch(e){}
+    $('fSort').value = 'custom';
+    try { localStorage.setItem(LS_SORT, 'custom'); } catch(e){}
+    closeTop('reorder');
+    renderAll();
+    toast('Order saved — the list now follows <b>Custom order</b> on every device.', 'ok');
+    refresh(true);
+  }).catch(function(err){
+    loading(false);
+    toast('Could not save the order.<br><small>' + esc(err.message) + '</small>', 'err');
+  });
+};
+$('dReorder').onclick = function(){ drawer(false); enterReorder(); };
+
 $('q').addEventListener('input', applyFilters);
 $('fCat').addEventListener('change', applyFilters);
 $('fStatus').addEventListener('change', applyFilters);
-$('fSort').addEventListener('change', applyFilters);
+$('fSort').addEventListener('change', function(){
+  try { localStorage.setItem(LS_SORT, this.value); } catch(e){}
+  applyFilters();
+});
 $('alertBtn').onclick = function(){
   $('fStatus').value = products.some(function(p){ return p.status==='out'; }) ? 'out' : 'low';
   applyFilters();
@@ -1285,7 +1614,7 @@ function openProduct(p){
   $('pQty').value       = p ? p.qty : 0;
   $('pWholesale').value = p ? p.wholesale : '';
   $('pRetail').value    = p ? p.retail : '';
-  $('pReorder').value   = p ? p.reorder : 3;
+  $('pReorder').value   = p ? p.reorder : 2;
   $('pCategory').value  = p ? (p['Category'] || '') : '';
   $('pMaterial').value  = p ? (p['Material / Finish'] || '') : '';
   $('pColour').value    = p ? p['Colour'] : '';
