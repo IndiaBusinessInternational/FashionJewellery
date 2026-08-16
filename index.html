@@ -204,6 +204,10 @@ select:focus,.btn:hover{border-color:var(--border-strong);}
 }
 .cmeta{font-size:10.5px;color:var(--text-muted);display:flex;flex-wrap:wrap;gap:5px;}
 .cmeta span{background:var(--card2);padding:2px 6px;border-radius:5px;}
+.owner-tag{font-weight:800;letter-spacing:.4px;}
+.cmeta .owner-tag.ibi,td .owner-tag.ibi{color:var(--cyan);background:rgba(34,211,238,.08);border:1px solid rgba(34,211,238,.3);}
+.cmeta .owner-tag.nsm,td .owner-tag.nsm{color:var(--gold);background:rgba(233,185,73,.1);border:1px solid rgba(233,185,73,.35);}
+td .owner-tag{font-size:10px;padding:2px 6px;border-radius:5px;white-space:nowrap;}
 .cprice{display:flex;align-items:baseline;gap:7px;margin-top:auto;}
 .cprice b{font-family:"Roboto Condensed",Roboto,sans-serif;font-size:17px;font-weight:900;color:var(--gold);}
 .cprice small{font-size:10px;color:var(--text-muted);}
@@ -465,7 +469,7 @@ footer b{color:var(--cyan);}
       <small>Imitation Jewellery Stock</small>
     </div>
   </div>
-  <span class="ver-badge" id="verBadge" title="Version and server status">v2.7</span>
+  <span class="ver-badge" id="verBadge" title="Version and server status">v2.8</span>
   <span class="spacer"></span>
   <button class="icon-btn" id="syncBtn" title="Sync sales from IBI Order Processing">&#8635;</button>
   <button class="icon-btn" id="themeBtn" title="Light / dark">&#9680;</button>
@@ -527,7 +531,7 @@ footer b{color:var(--cyan);}
 <button class="fab" id="fab">&#43; Add</button>
 
 <footer>
-  <b>IBI Fashion Jewellery v2.7</b> &middot; India Business International<br>
+  <b>IBI Fashion Jewellery v2.8</b> &middot; India Business International<br>
   Served from this laptop &middot; records kept locally in <b>Backend\data\</b>.<br>
   Stock is deducted automatically when a sale is saved in <b>IBI Order Processing</b>.<br>
   <span id="footStat"></span>
@@ -617,7 +621,7 @@ footer b{color:var(--cyan);}
         </div>
         <div class="field">
           <label>Reorder Level</label>
-          <input id="pReorder" type="number" min="0" step="1" value="5" inputmode="numeric">
+          <input id="pReorder" type="number" min="0" step="1" value="3" inputmode="numeric">
         </div>
         <div class="field">
           <label>HSN</label>
@@ -634,6 +638,13 @@ footer b{color:var(--cyan);}
 
       <div class="section-h">Sourcing &amp; storage</div>
       <div class="fgrid">
+        <div class="field">
+          <label>Stock Belongs To</label>
+          <select id="pOwner">
+            <option value="IBI">IBI stock</option>
+            <option value="NSM">NSM stock</option>
+          </select>
+        </div>
         <div class="field">
           <label>Supplier / Vendor</label>
           <input id="pSupplier" autocomplete="off">
@@ -748,7 +759,7 @@ footer b{color:var(--cyan);}
     <button class="ditem" id="dTrash"><span class="di">&#9851;</span><span>Recently Deleted<small>Put a deleted product back</small></span></button>
     <button class="ditem" id="dBaseline"><span class="di">&#9878;</span><span>Reset Sale-Sync Baseline<small>Re-mark today as the starting point</small></span></button>
     <div style="margin-top:14px;padding:11px;border-radius:11px;background:var(--bg2);border:1px solid var(--border);font-size:11px;color:var(--text-muted);line-height:1.7;word-break:break-word;">
-      <b style="color:var(--cyan);">Version v2.7</b> &middot; this laptop is the server<br>
+      <b style="color:var(--cyan);">Version v2.8</b> &middot; this laptop is the server<br>
       <span id="dPing">Server: checking…</span>
     </div>
   </div>
@@ -762,7 +773,7 @@ footer b{color:var(--cyan);}
    IBI FASHION JEWELLERY  —  front end
    Version badge lives in: .ver-badge, footer, drawer "Version" line, sw.js
    ═══════════════════════════════════════════════════════════════════════════ */
-var APP_VERSION = "v2.7";
+var APP_VERSION = "v2.8";
 
 /* The laptop is the server. This page is served by Backend\server.js, so the
    API is same-origin — there is nothing to configure and no cloud backend.
@@ -1115,7 +1126,8 @@ function applyFilters(){
     if(st && p.status !== st) return false;
     if(q){
       var hay = [p['Product Name'], p['SKU'], p['Category'], p['Material / Finish'],
-                 p['Colour'], p['Supplier'], p['Storage Location'], p['Aliases'], p['Notes']]
+                 p['Colour'], p['Supplier'], p['Storage Location'], p['Aliases'], p['Notes'],
+                 (p['Stock Owner'] || 'IBI') + ' stock']
                 .join(' ').toLowerCase();
       if(hay.indexOf(q) === -1) return false;
     }
@@ -1145,10 +1157,11 @@ function renderGrid(){
 function cardHtml(p){
   var img = p['Image URL'];
   var label = p.status === 'out' ? 'Out' : (p.status === 'low' ? 'Low' : 'In stock');
-  var meta = [];
-  if(p['Category']) meta.push(esc(p['Category']));
-  if(p['Material / Finish']) meta.push(esc(p['Material / Finish']));
-  if(p['Colour']) meta.push(esc(p['Colour']));
+  var owner = (p['Stock Owner'] || 'IBI');
+  var meta = ['<span class="owner-tag ' + (owner === 'NSM' ? 'nsm' : 'ibi') + '">' + esc(owner) + ' stock</span>'];
+  if(p['Category']) meta.push('<span>' + esc(p['Category']) + '</span>');
+  if(p['Material / Finish']) meta.push('<span>' + esc(p['Material / Finish']) + '</span>');
+  if(p['Colour']) meta.push('<span>' + esc(p['Colour']) + '</span>');
 
   return '<div class="card" data-id="' + esc(p['ID']) + '">'
     + '<div class="thumb" data-act="zoom">'
@@ -1159,7 +1172,7 @@ function cardHtml(p){
     + '</div>'
     + '<div class="cbody">'
       + '<div class="cname" title="' + esc(p['Product Name']) + '">' + esc(p['Product Name']) + '</div>'
-      + (meta.length ? '<div class="cmeta">' + meta.map(function(m){ return '<span>' + m + '</span>'; }).join('') + '</div>' : '')
+      + '<div class="cmeta">' + meta.join('') + '</div>'
       + '<div class="cprice">'
         + '<b>' + (money(p.wholesale) || '—') + '</b><small>wholesale</small>'
         + (p.retail !== '' ? '<span class="mrp">' + money(p.retail) + '</span>' : '')
@@ -1176,10 +1189,12 @@ function cardHtml(p){
 function renderTable(){
   if(!filtered.length){ renderEmpty(); return; }
   var rows = filtered.map(function(p){
+    var owner = (p['Stock Owner'] || 'IBI');
     return '<tr data-id="' + esc(p['ID']) + '">'
       + '<td>' + (p['Image URL'] ? '<img src="' + esc(p['Image URL']) + '" alt="">' : '') + '</td>'
       + '<td><b>' + esc(p['SKU']) + '</b></td>'
       + '<td>' + esc(p['Product Name']) + '</td>'
+      + '<td><span class="owner-tag ' + (owner === 'NSM' ? 'nsm' : 'ibi') + '">' + esc(owner) + '</span></td>'
       + '<td>' + esc(p['Category']) + '</td>'
       + '<td>' + esc(p['Material / Finish']) + '</td>'
       + '<td class="num">' + (money(p.wholesale) || '—') + '</td>'
@@ -1191,7 +1206,7 @@ function renderTable(){
       + '</tr>';
   }).join('');
   $('listArea').innerHTML = '<div class="tblwrap"><table><thead><tr>'
-    + '<th></th><th>SKU</th><th>Product</th><th>Category</th><th>Material</th>'
+    + '<th></th><th>SKU</th><th>Product</th><th>Stock Of</th><th>Category</th><th>Material</th>'
     + '<th class="num">Wholesale</th><th class="num">MRP</th><th class="num">Qty</th>'
     + '<th class="num">Value</th><th>Status</th><th>Last Updated</th>'
     + '</tr></thead><tbody>' + rows + '</tbody></table></div>';
@@ -1270,7 +1285,7 @@ function openProduct(p){
   $('pQty').value       = p ? p.qty : 0;
   $('pWholesale').value = p ? p.wholesale : '';
   $('pRetail').value    = p ? p.retail : '';
-  $('pReorder').value   = p ? p.reorder : 5;
+  $('pReorder').value   = p ? p.reorder : 3;
   $('pCategory').value  = p ? (p['Category'] || '') : '';
   $('pMaterial').value  = p ? (p['Material / Finish'] || '') : '';
   $('pColour').value    = p ? p['Colour'] : '';
@@ -1280,6 +1295,7 @@ function openProduct(p){
   $('pGst').value       = p ? (p['GST %'] === '' ? 3 : p['GST %']) : 3;
   // New product → pre-filled. An existing one keeps exactly what it has,
   // including blank: opening an old record must not quietly restamp it.
+  $('pOwner').value     = p ? (p['Stock Owner'] || 'IBI') : 'IBI';
   $('pSupplier').value  = p ? p['Supplier'] : DEFAULT_SUPPLIER;
   $('pPurchase').value  = p ? isoDate(p['Purchase Date']) : '';
   $('pLocation').value  = p ? p['Storage Location'] : '';
@@ -1417,6 +1433,7 @@ $('pSave').onclick = function(){
     weight: $('pWeight').value,
     hsn: $('pHsn').value.trim(),
     gst: $('pGst').value,
+    owner: $('pOwner').value,
     supplier: $('pSupplier').value.trim(),
     purchaseDate: $('pPurchase').value,
     location: $('pLocation').value.trim(),
@@ -1624,7 +1641,7 @@ $('dCsv').onclick = function(){
   if(!products.length){ toast('Nothing to export yet.', 'warn'); return; }
   var cols = ['SKU','Product Name','Category','Material / Finish','Colour','Size','Weight (gm)',
               'Qty in Stock','Reorder Level','Wholesale Price','Retail Price (MRP)','HSN','GST %',
-              'Supplier','Purchase Date','Storage Location','Aliases','Notes','Image URL',
+              'Stock Owner','Supplier','Purchase Date','Storage Location','Aliases','Notes','Image URL',
               'Created On','Last Updated'];
   function cell(v){
     var s = String(v == null ? '' : v);
