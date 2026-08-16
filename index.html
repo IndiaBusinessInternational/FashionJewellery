@@ -213,6 +213,7 @@ select:focus,.btn:hover{border-color:var(--border-strong);}
   width:28px;height:28px;border-radius:8px;flex:none;font-size:15px;font-weight:800;
   background:var(--card2);border:1px solid var(--border);color:var(--text);cursor:pointer;
   display:flex;align-items:center;justify-content:center;transition:var(--tr);
+  touch-action:manipulation;
 }
 .qbtn:hover{border-color:var(--border-strong);color:var(--cyan);}
 .qval{
@@ -399,6 +400,11 @@ input[type=file]{display:none;}
 .toast.ok{border-color:rgba(16,185,129,.6);}
 .toast.err{border-color:rgba(239,68,68,.6);}
 .toast.warn{border-color:rgba(245,158,11,.6);}
+.toast.undoable{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.toast .undo{
+  flex:none;background:transparent;border:0;color:var(--cyan);cursor:pointer;
+  font-weight:800;font-size:12px;letter-spacing:.8px;padding:4px 6px;touch-action:manipulation;
+}
 @keyframes pop{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:none;}}
 
 /* Loader */
@@ -459,7 +465,7 @@ footer b{color:var(--cyan);}
       <small>Imitation Jewellery Stock</small>
     </div>
   </div>
-  <span class="ver-badge" id="verBadge" title="Version and server status">v2.6</span>
+  <span class="ver-badge" id="verBadge" title="Version and server status">v2.7</span>
   <span class="spacer"></span>
   <button class="icon-btn" id="syncBtn" title="Sync sales from IBI Order Processing">&#8635;</button>
   <button class="icon-btn" id="themeBtn" title="Light / dark">&#9680;</button>
@@ -521,7 +527,7 @@ footer b{color:var(--cyan);}
 <button class="fab" id="fab">&#43; Add</button>
 
 <footer>
-  <b>IBI Fashion Jewellery v2.6</b> &middot; India Business International<br>
+  <b>IBI Fashion Jewellery v2.7</b> &middot; India Business International<br>
   Served from this laptop &middot; records kept locally in <b>Backend\data\</b>.<br>
   Stock is deducted automatically when a sale is saved in <b>IBI Order Processing</b>.<br>
   <span id="footStat"></span>
@@ -742,7 +748,7 @@ footer b{color:var(--cyan);}
     <button class="ditem" id="dTrash"><span class="di">&#9851;</span><span>Recently Deleted<small>Put a deleted product back</small></span></button>
     <button class="ditem" id="dBaseline"><span class="di">&#9878;</span><span>Reset Sale-Sync Baseline<small>Re-mark today as the starting point</small></span></button>
     <div style="margin-top:14px;padding:11px;border-radius:11px;background:var(--bg2);border:1px solid var(--border);font-size:11px;color:var(--text-muted);line-height:1.7;word-break:break-word;">
-      <b style="color:var(--cyan);">Version v2.6</b> &middot; this laptop is the server<br>
+      <b style="color:var(--cyan);">Version v2.7</b> &middot; this laptop is the server<br>
       <span id="dPing">Server: checking…</span>
     </div>
   </div>
@@ -756,7 +762,7 @@ footer b{color:var(--cyan);}
    IBI FASHION JEWELLERY  —  front end
    Version badge lives in: .ver-badge, footer, drawer "Version" line, sw.js
    ═══════════════════════════════════════════════════════════════════════════ */
-var APP_VERSION = "v2.6";
+var APP_VERSION = "v2.7";
 
 /* The laptop is the server. This page is served by Backend\server.js, so the
    API is same-origin — there is nothing to configure and no cloud backend.
@@ -1200,8 +1206,22 @@ function renderEmpty(){
     + '</div>';
 }
 
-/* card / row interactions */
+/* card / row interactions.
+   A tap that lands while the list is still moving (or that stops a fling) must
+   only stop the scroll — never press the control under the finger. Native lists
+   behave this way; without it, +/− stock buttons get hit while scrolling. */
+var listScrolling = false, listScrollTimer = null, tapStartedDuringScroll = false;
+window.addEventListener('scroll', function(){
+  listScrolling = true;
+  clearTimeout(listScrollTimer);
+  listScrollTimer = setTimeout(function(){ listScrolling = false; }, 150);
+}, { capture:true, passive:true });
+$('listArea').addEventListener('touchstart', function(){
+  tapStartedDuringScroll = listScrolling;
+}, { passive:true });
+
 $('listArea').addEventListener('click', function(e){
+  if(tapStartedDuringScroll || listScrolling){ tapStartedDuringScroll = false; return; }
   var host = e.target.closest('[data-id]');
   if(!host) return;
   var p = byId(host.getAttribute('data-id'));
@@ -1447,7 +1467,36 @@ function quickAdjust(p, delta){
       if(!r || !r.ok){ toast('Could not update: ' + esc((r && r.error) || ''), 'err'); return; }
       p.qty = r.product.qty; p.status = r.product.status; p['Last Updated'] = r.product['Last Updated'];
       applyFilters(); renderKpis();
+      undoToast(p, delta);
     }).catch(function(err){ toast('Network error: ' + esc(err.message), 'err'); });
+}
+
+/* Every one-tap stock change gets an UNDO, so a mis-tap is one tap to reverse.
+   One snackbar at a time — a new quick adjust replaces the previous one. */
+function undoToast(p, delta){
+  var old = document.querySelector('#toasts .toast.undoable');
+  if(old && old.parentNode) old.parentNode.removeChild(old);
+  var t = document.createElement('div');
+  t.className = 'toast ok undoable';
+  t.innerHTML = '<span>' + (delta > 0 ? '+1' : '&minus;1') + ' &middot; '
+    + esc(p['Product Name']) + ' now <b>' + p.qty + '</b> in stock</span>'
+    + '<button class="undo" type="button">UNDO</button>';
+  t.querySelector('.undo').onclick = function(){
+    if(t.parentNode) t.parentNode.removeChild(t);
+    api('adjust', { id: p['ID'], delta: -delta, reason: 'Undo quick adjust' })
+      .then(function(r){
+        if(!r || !r.ok){ toast('Could not undo: ' + esc((r && r.error) || ''), 'err'); return; }
+        p.qty = r.product.qty; p.status = r.product.status; p['Last Updated'] = r.product['Last Updated'];
+        applyFilters(); renderKpis();
+        toast('Undone &middot; ' + esc(p['Product Name']) + ' back to <b>' + p.qty + '</b>', 'ok', 2600);
+      }).catch(function(err){ toast('Network error: ' + esc(err.message), 'err'); });
+  };
+  $('toasts').appendChild(t);
+  setTimeout(function(){
+    if(!t.parentNode) return;
+    t.style.transition='opacity .3s'; t.style.opacity='0';
+    setTimeout(function(){ if(t.parentNode) t.parentNode.removeChild(t); }, 320);
+  }, 6000);
 }
 
 function openAdjust(p){
