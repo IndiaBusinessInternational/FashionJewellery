@@ -136,6 +136,8 @@ body{
 .kpi .k{font-size:9.5px;letter-spacing:1.2px;text-transform:uppercase;color:var(--text-muted);font-weight:700;}
 .kpi .v{font-family:"Roboto Condensed",Roboto,sans-serif;font-weight:900;font-size:24px;line-height:1.15;margin-top:2px;}
 .kpi .s{font-size:10.5px;color:var(--text-muted);}
+.kpi .s .oi{color:var(--cyan);font-weight:700;}
+.kpi .s .on{color:var(--gold);font-weight:700;}
 
 /* Toolbar */
 .toolbar{
@@ -512,7 +514,7 @@ body.reordering .rbar{display:flex;}
       <small>Imitation Jewellery Stock</small>
     </div>
   </div>
-  <span class="ver-badge" id="verBadge" title="Version and server status">v2.10</span>
+  <span class="ver-badge" id="verBadge" title="Version and server status">v2.11</span>
   <span class="spacer"></span>
   <button class="icon-btn" id="syncBtn" title="Sync sales from IBI Order Processing">&#8635;</button>
   <button class="icon-btn" id="themeBtn" title="Light / dark">&#9680;</button>
@@ -585,7 +587,7 @@ body.reordering .rbar{display:flex;}
 </div>
 
 <footer>
-  <b>IBI Fashion Jewellery v2.10</b> &middot; India Business International<br>
+  <b>IBI Fashion Jewellery v2.11</b> &middot; India Business International<br>
   Served from this laptop &middot; records kept locally in <b>Backend\data\</b>.<br>
   Stock is deducted automatically when a sale is saved in <b>IBI Order Processing</b>.<br>
   <span id="footStat"></span>
@@ -814,7 +816,7 @@ body.reordering .rbar{display:flex;}
     <button class="ditem" id="dTrash"><span class="di">&#9851;</span><span>Recently Deleted<small>Put a deleted product back</small></span></button>
     <button class="ditem" id="dBaseline"><span class="di">&#9878;</span><span>Reset Sale-Sync Baseline<small>Re-mark today as the starting point</small></span></button>
     <div style="margin-top:14px;padding:11px;border-radius:11px;background:var(--bg2);border:1px solid var(--border);font-size:11px;color:var(--text-muted);line-height:1.7;word-break:break-word;">
-      <b style="color:var(--cyan);">Version v2.10</b> &middot; this laptop is the server<br>
+      <b style="color:var(--cyan);">Version v2.11</b> &middot; this laptop is the server<br>
       <span id="dPing">Server: checking…</span>
     </div>
   </div>
@@ -828,7 +830,7 @@ body.reordering .rbar{display:flex;}
    IBI FASHION JEWELLERY  —  front end
    Version badge lives in: .ver-badge, footer, drawer "Version" line, sw.js
    ═══════════════════════════════════════════════════════════════════════════ */
-var APP_VERSION = "v2.10";
+var APP_VERSION = "v2.11";
 
 /* The laptop is the server. This page is served by Backend\server.js, so the
    API is same-origin — there is nothing to configure and no cloud backend.
@@ -1178,17 +1180,23 @@ function buildCatFilter(){
 }
 
 function renderKpis(){
-  var units = 0, value = 0, low = 0, out = 0;
+  var units = 0, value = 0, valIBI = 0, valNSM = 0, low = 0, out = 0;
   products.forEach(function(p){
     units += p.qty;
-    if(p.wholesale !== '') value += p.qty * p.wholesale;
+    if(p.wholesale !== ''){
+      var v = p.qty * p.wholesale;
+      value += v;
+      if((p['Stock Owner'] || 'IBI') === 'NSM') valNSM += v; else valIBI += v;
+    }
     if(p.status === 'low') low++;
     if(p.status === 'out') out++;
   });
+  var valueSplit = '<span class="oi">IBI ' + (money(valIBI) || '₹0') + '</span>'
+                 + ' &middot; <span class="on">NSM ' + (money(valNSM) || '₹0') + '</span>';
   $('kpis').innerHTML =
       kpi('Products', products.length, products.length + ' distinct designs', '')
     + kpi('Units in Stock', units.toLocaleString('en-IN'), 'pieces on hand', 'gold')
-    + kpi('Stock Value', money(value) || '₹0', 'at wholesale cost', 'gold')
+    + kpi('Stock Value', money(value) || '₹0', valueSplit, 'gold')
     + kpi('Low Stock', low, 'at or below reorder level', low ? 'warn' : '')
     + kpi('Out of Stock', out, 'needs replenishing', out ? 'bad' : '');
 
