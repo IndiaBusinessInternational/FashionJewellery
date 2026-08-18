@@ -512,7 +512,7 @@ body.reordering .rbar{display:flex;}
       <small>Imitation Jewellery Stock</small>
     </div>
   </div>
-  <span class="ver-badge" id="verBadge" title="Version and server status">v2.9</span>
+  <span class="ver-badge" id="verBadge" title="Version and server status">v2.10</span>
   <span class="spacer"></span>
   <button class="icon-btn" id="syncBtn" title="Sync sales from IBI Order Processing">&#8635;</button>
   <button class="icon-btn" id="themeBtn" title="Light / dark">&#9680;</button>
@@ -585,7 +585,7 @@ body.reordering .rbar{display:flex;}
 </div>
 
 <footer>
-  <b>IBI Fashion Jewellery v2.9</b> &middot; India Business International<br>
+  <b>IBI Fashion Jewellery v2.10</b> &middot; India Business International<br>
   Served from this laptop &middot; records kept locally in <b>Backend\data\</b>.<br>
   Stock is deducted automatically when a sale is saved in <b>IBI Order Processing</b>.<br>
   <span id="footStat"></span>
@@ -814,7 +814,7 @@ body.reordering .rbar{display:flex;}
     <button class="ditem" id="dTrash"><span class="di">&#9851;</span><span>Recently Deleted<small>Put a deleted product back</small></span></button>
     <button class="ditem" id="dBaseline"><span class="di">&#9878;</span><span>Reset Sale-Sync Baseline<small>Re-mark today as the starting point</small></span></button>
     <div style="margin-top:14px;padding:11px;border-radius:11px;background:var(--bg2);border:1px solid var(--border);font-size:11px;color:var(--text-muted);line-height:1.7;word-break:break-word;">
-      <b style="color:var(--cyan);">Version v2.9</b> &middot; this laptop is the server<br>
+      <b style="color:var(--cyan);">Version v2.10</b> &middot; this laptop is the server<br>
       <span id="dPing">Server: checking…</span>
     </div>
   </div>
@@ -828,7 +828,7 @@ body.reordering .rbar{display:flex;}
    IBI FASHION JEWELLERY  —  front end
    Version badge lives in: .ver-badge, footer, drawer "Version" line, sw.js
    ═══════════════════════════════════════════════════════════════════════════ */
-var APP_VERSION = "v2.9";
+var APP_VERSION = "v2.10";
 
 /* The laptop is the server. This page is served by Backend\server.js, so the
    API is same-origin — there is nothing to configure and no cloud backend.
@@ -865,6 +865,26 @@ var NAME_PRESETS = [
   'Invisible Chain Double Layer',
   'Invisible Chain Triple Layer'
 ];
+
+/* HSN is allotted from the product line while listing:
+   Invisible Chain → 71171990, Hydro Crystal Beads Chain → 71179010.
+   A hand-typed HSN that isn't one of the auto values is never overwritten. */
+var HSN_RULES = [
+  { match: 'invisible chain',           hsn: '71171990' },
+  { match: 'hydro crystal beads chain', hsn: '71179010' }
+];
+var HSN_AUTO_VALUES = ['', '7117', '71171990', '71179010'];
+function hsnForName(name){
+  var n = String(name || '').toLowerCase();
+  for(var i = 0; i < HSN_RULES.length; i++)
+    if(n.indexOf(HSN_RULES[i].match) !== -1) return HSN_RULES[i].hsn;
+  return '';
+}
+function autoHsn(){
+  var h = hsnForName($('pName').value);
+  if(!h) return;
+  if(HSN_AUTO_VALUES.indexOf($('pHsn').value.trim()) !== -1) $('pHsn').value = h;
+}
 
 var products = [], filtered = [], dataDir = '';
 var view = localStorage.getItem(LS_VIEW) || 'grid';
@@ -1123,11 +1143,12 @@ $('pNamePicks').addEventListener('click', function(e){
   var el = $('pName');
   el.value = b.getAttribute('data-name');
   markNamePick();
+  autoHsn();
   // Leave the caret at the end so the colour can be typed straight on.
   el.focus();
   try { el.setSelectionRange(el.value.length, el.value.length); } catch(err){}
 });
-$('pName').addEventListener('input', markNamePick);
+$('pName').addEventListener('input', function(){ markNamePick(); autoHsn(); });
 
 function fillSelect(sel, arr, blankLabel){
   sel.innerHTML = '<option value="">' + esc(blankLabel) + '</option>'
