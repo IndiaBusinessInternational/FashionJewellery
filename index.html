@@ -514,7 +514,7 @@ body.reordering .rbar{display:flex;}
       <small>Imitation Jewellery Stock</small>
     </div>
   </div>
-  <span class="ver-badge" id="verBadge" title="Version and server status">v2.11</span>
+  <span class="ver-badge" id="verBadge" title="Version and server status">v2.12</span>
   <span class="spacer"></span>
   <button class="icon-btn" id="syncBtn" title="Sync sales from IBI Order Processing">&#8635;</button>
   <button class="icon-btn" id="themeBtn" title="Light / dark">&#9680;</button>
@@ -587,7 +587,7 @@ body.reordering .rbar{display:flex;}
 </div>
 
 <footer>
-  <b>IBI Fashion Jewellery v2.11</b> &middot; India Business International<br>
+  <b>IBI Fashion Jewellery v2.12</b> &middot; India Business International<br>
   Served from this laptop &middot; records kept locally in <b>Backend\data\</b>.<br>
   Stock is deducted automatically when a sale is saved in <b>IBI Order Processing</b>.<br>
   <span id="footStat"></span>
@@ -810,13 +810,14 @@ body.reordering .rbar{display:flex;}
     <button class="ditem" id="dLog"><span class="di">&#128220;</span><span>Stock Movement Log<small>Every change, with who and why</small></span></button>
     <button class="ditem" id="dReorder"><span class="di">&#8645;</span><span>Re-arrange Products<small>Drag cards into your own order — saved for every device</small></span></button>
     <button class="ditem" id="dCsv"><span class="di">&#11015;</span><span>Export CSV<small>Full register as a spreadsheet</small></span></button>
+    <button class="ditem" id="dXlsx"><span class="di">&#128202;</span><span>Export Product Names (Excel)<small>Current filtered list as an .xlsx workbook</small></span></button>
     <button class="ditem" id="dPrint"><span class="di">&#128424;</span><span>Print / Save PDF<small>Current filtered list</small></span></button>
     <button class="ditem" id="dFolder"><span class="di">&#128193;</span><span>Open Data Folder<small>Backend\data\ on this laptop — the real records</small></span></button>
     <a class="ditem" href="https://orders.indiabusinessinternational.online/" target="_blank" rel="noopener"><span class="di">&#128230;</span><span>IBI Order Processing<small>Where sales are recorded</small></span></a>
     <button class="ditem" id="dTrash"><span class="di">&#9851;</span><span>Recently Deleted<small>Put a deleted product back</small></span></button>
     <button class="ditem" id="dBaseline"><span class="di">&#9878;</span><span>Reset Sale-Sync Baseline<small>Re-mark today as the starting point</small></span></button>
     <div style="margin-top:14px;padding:11px;border-radius:11px;background:var(--bg2);border:1px solid var(--border);font-size:11px;color:var(--text-muted);line-height:1.7;word-break:break-word;">
-      <b style="color:var(--cyan);">Version v2.11</b> &middot; this laptop is the server<br>
+      <b style="color:var(--cyan);">Version v2.12</b> &middot; this laptop is the server<br>
       <span id="dPing">Server: checking…</span>
     </div>
   </div>
@@ -830,7 +831,7 @@ body.reordering .rbar{display:flex;}
    IBI FASHION JEWELLERY  —  front end
    Version badge lives in: .ver-badge, footer, drawer "Version" line, sw.js
    ═══════════════════════════════════════════════════════════════════════════ */
-var APP_VERSION = "v2.11";
+var APP_VERSION = "v2.12";
 
 /* The laptop is the server. This page is served by Backend\server.js, so the
    API is same-origin — there is nothing to configure and no cloud backend.
@@ -1097,6 +1098,10 @@ function ping(){
             : '');
       $('footStat').textContent = 'Served from this laptop · server ' + r.version
         + ' · ' + r.products + ' products stored locally';
+      if(r.version !== APP_VERSION){
+        $('dPing').innerHTML += '<br><span style="color:var(--text-muted);">App ' + esc(APP_VERSION)
+          + ' · server ' + esc(r.version) + ' — restart the server to bring them in step</span>';
+      }
     }
   }).catch(function(){
     $('dPing').innerHTML = 'Server: <b style="color:var(--bad);">not responding</b>';
@@ -2018,6 +2023,59 @@ $('dCsv').onclick = function(){
   a.click();
   setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1500);
   toast('Exported <b>' + filtered.length + '</b> row' + (filtered.length===1?'':'s') + '.', 'ok');
+};
+
+/* Excel export of the product names. SheetJS is fetched from cdnjs the first
+   time it is needed, so the app carries no extra weight until someone actually
+   asks for a workbook. Exports what is on screen (current filter + sort), which
+   is the whole register when nothing is filtered. */
+var XLSX_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+function loadXlsx(){
+  if(window.XLSX) return Promise.resolve(window.XLSX);
+  return new Promise(function(res, rej){
+    var s = document.createElement('script');
+    s.src = XLSX_SRC; s.async = true;
+    s.onload = function(){ window.XLSX ? res(window.XLSX) : rej(new Error('Excel library did not load')); };
+    s.onerror = function(){ rej(new Error('could not reach the Excel library — check the internet connection')); };
+    document.head.appendChild(s);
+  });
+}
+
+$('dXlsx').onclick = function(){
+  drawer(false);
+  if(!products.length){ toast('Nothing to export yet.', 'warn'); return; }
+  if(!filtered.length){ toast('The current filter shows no products — clear it and try again.', 'warn'); return; }
+  var btn = this; btn.disabled = true;
+  var snapshot = filtered.slice();
+  loadXlsx().then(function(X){
+    var cols = ['S.No','SKU','Product Name','Category','Colour','Qty in Stock','HSN','GST %','Stock Owner','Supplier','Aliases'];
+    var rows = snapshot.map(function(p, i){
+      return [i + 1, p['SKU'] || '', p['Product Name'] || '', p['Category'] || '', p['Colour'] || '',
+              p.qty, String(p['HSN'] || ''), p['GST %'] === '' || p['GST %'] == null ? '' : p['GST %'],
+              p['Stock Owner'] || 'IBI', p['Supplier'] || '', p['Aliases'] || ''];
+    });
+    var ws = X.utils.aoa_to_sheet([cols].concat(rows));
+    ws['!cols'] = [6,10,62,14,24,12,11,7,12,18,60].map(function(w){ return { wch: w }; });
+    ws['!autofilter'] = { ref: 'A1:K' + (rows.length + 1) };
+    var today = new Date();
+    var full = rows.length === products.length;
+    var about = X.utils.aoa_to_sheet([
+      ['Source', 'IBI Fashion Jewellery ' + APP_VERSION + ' — live register on this laptop'],
+      ['Exported on', today.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })],
+      ['Products', full ? rows.length + ' (full register)' : rows.length + ' of ' + products.length + ' (filtered view)'],
+      ['Order', 'As shown in the app at the time of export'],
+      ['Prepared by', 'Dr T Sasimurugan ME.PhD.,'],
+      ['', 'Founder, CEO & CTO – India Business International']
+    ]);
+    about['!cols'] = [{ wch: 14 }, { wch: 70 }];
+    var wb = X.utils.book_new();
+    X.utils.book_append_sheet(wb, ws, 'Product Names');
+    X.utils.book_append_sheet(wb, about, 'About');
+    X.writeFile(wb, 'IBI-Fashion-Jewellery-Product-Names-' + today.toISOString().slice(0, 10) + '.xlsx');
+    toast('Excel workbook with <b>' + rows.length + '</b> product name' + (rows.length === 1 ? '' : 's') + ' downloaded.', 'ok');
+  }).catch(function(err){
+    toast('Excel export failed: ' + esc(err.message), 'err', 6000);
+  }).then(function(){ btn.disabled = false; });
 };
 
 $('dPrint').onclick = function(){
