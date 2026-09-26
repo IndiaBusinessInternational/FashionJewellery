@@ -24,6 +24,7 @@
 <meta name="twitter:description" content="Imitation & fashion jewellery stock register — photos, quantities and wholesale prices, with stock deducted automatically when an order is processed.">
 <meta name="twitter:image" content="https://jewellery.indiabusinessinternational.online/og-banner.png">
 <link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="theme-color" content="#000000">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='-30 -30 244 244'><rect x='-30' y='-30' width='244' height='244' rx='40' fill='%23000'/><g fill='%2300c5ff'><circle cx='24' cy='24' r='4.5'/><circle cx='58' cy='24' r='7.5'/><circle cx='92' cy='24' r='10.5'/><circle cx='126' cy='24' r='13.5'/><circle cx='160' cy='24' r='16.5'/><circle cx='24' cy='58' r='4.5'/><circle cx='58' cy='58' r='7.5'/><circle cx='92' cy='58' r='10.5'/><circle cx='126' cy='58' r='13.5'/><circle cx='160' cy='58' r='16.5'/><circle cx='24' cy='92' r='4.5'/><circle cx='58' cy='92' r='7.5'/><circle cx='92' cy='92' r='10.5'/><circle cx='126' cy='92' r='13.5'/><circle cx='160' cy='92' r='16.5'/><circle cx='24' cy='126' r='4.5'/><circle cx='58' cy='126' r='7.5'/><circle cx='92' cy='126' r='10.5'/><circle cx='126' cy='126' r='13.5'/><circle cx='160' cy='126' r='16.5'/><circle cx='24' cy='160' r='4.5'/><circle cx='58' cy='160' r='7.5'/><circle cx='92' cy='160' r='10.5'/><circle cx='126' cy='160' r='13.5'/><circle cx='160' cy='160' r='16.5'/></g></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -514,7 +515,7 @@ body.reordering .rbar{display:flex;}
       <small>Imitation Jewellery Stock</small>
     </div>
   </div>
-  <span class="ver-badge" id="verBadge" title="Version and server status">v2.12</span>
+  <span class="ver-badge" id="verBadge" title="Version and server status">v2.13</span>
   <span class="spacer"></span>
   <button class="icon-btn" id="syncBtn" title="Sync sales from IBI Order Processing">&#8635;</button>
   <button class="icon-btn" id="themeBtn" title="Light / dark">&#9680;</button>
@@ -587,7 +588,7 @@ body.reordering .rbar{display:flex;}
 </div>
 
 <footer>
-  <b>IBI Fashion Jewellery v2.12</b> &middot; India Business International<br>
+  <b>IBI Fashion Jewellery v2.13</b> &middot; India Business International<br>
   Served from this laptop &middot; records kept locally in <b>Backend\data\</b>.<br>
   Stock is deducted automatically when a sale is saved in <b>IBI Order Processing</b>.<br>
   <span id="footStat"></span>
@@ -817,7 +818,7 @@ body.reordering .rbar{display:flex;}
     <button class="ditem" id="dTrash"><span class="di">&#9851;</span><span>Recently Deleted<small>Put a deleted product back</small></span></button>
     <button class="ditem" id="dBaseline"><span class="di">&#9878;</span><span>Reset Sale-Sync Baseline<small>Re-mark today as the starting point</small></span></button>
     <div style="margin-top:14px;padding:11px;border-radius:11px;background:var(--bg2);border:1px solid var(--border);font-size:11px;color:var(--text-muted);line-height:1.7;word-break:break-word;">
-      <b style="color:var(--cyan);">Version v2.12</b> &middot; this laptop is the server<br>
+      <b style="color:var(--cyan);">Version v2.13</b> &middot; this laptop is the server<br>
       <span id="dPing">Server: checking…</span>
     </div>
   </div>
@@ -831,7 +832,7 @@ body.reordering .rbar{display:flex;}
    IBI FASHION JEWELLERY  —  front end
    Version badge lives in: .ver-badge, footer, drawer "Version" line, sw.js
    ═══════════════════════════════════════════════════════════════════════════ */
-var APP_VERSION = "v2.12";
+var APP_VERSION = "v2.13";
 
 /* The laptop is the server. This page is served by Backend\server.js, so the
    API is same-origin — there is nothing to configure and no cloud backend.
