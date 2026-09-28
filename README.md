@@ -1,4 +1,4 @@
-# IBI Fashion Jewellery v2.13
+# IBI Fashion Jewellery v2.14
 
 Imitation / fashion jewellery stock register for **India Business International** —
 photos, quantities and wholesale prices, with stock **deducted automatically when a

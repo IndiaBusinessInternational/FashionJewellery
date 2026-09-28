@@ -188,6 +188,21 @@ select:focus,.btn:hover{border-color:var(--border-strong);}
 }
 .thumb img{width:100%;height:100%;object-fit:cover;display:block;}
 .thumb .ph{font-size:38px;opacity:.22;}
+/* v2.14 — two lifestyle shots, then the product photo, cross-fading on the card.
+   Stacked, not scrolled: a fade never moves the layout under a thumb. */
+.thumb .slide{position:absolute;inset:0;opacity:0;transition:opacity .7s ease;}
+.thumb .slide.on{opacity:1;}
+.thumb .slide.bad{display:none;}
+.sdots{
+  position:absolute;left:0;right:0;bottom:8px;display:flex;justify-content:center;gap:6px;
+  pointer-events:none;
+}
+.sdots i{
+  width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.45);
+  box-shadow:0 0 0 1px rgba(0,0,0,.25);transition:background .3s,transform .3s;
+}
+.sdots i.on{background:#fff;transform:scale(1.25);}
+@media (prefers-reduced-motion: reduce){ .thumb .slide{transition:none;} }
 .pill{
   position:absolute;top:8px;left:8px;padding:3px 8px;border-radius:999px;
   font-size:9.5px;font-weight:900;letter-spacing:.6px;text-transform:uppercase;
@@ -315,7 +330,7 @@ td img{width:38px;height:38px;object-fit:cover;border-radius:7px;display:block;}
 }
 .field input:focus,.field textarea:focus,.field select:focus{border-color:var(--border-strong);}
 .field textarea{resize:vertical;min-height:58px;}
-.hint{font-size:10.5px;color:var(--text-muted);line-height:1.5;}
+.hint{font-size:12px;color:var(--text-muted);line-height:1.5;}
 
 .imgbox{
   display:flex;gap:12px;align-items:flex-start;padding:11px;border-radius:12px;
@@ -352,6 +367,27 @@ input[type=file]{display:none;}
 @media(max-width:400px){
   .imgbox{flex-direction:column;}
   .imgprev{width:100%;height:150px;}
+}
+/* Lifestyle photo slots — two side by side even on a 360px phone. */
+.lifegrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.lifeslot{
+  display:flex;flex-direction:column;gap:7px;padding:10px;border-radius:12px;
+  background:var(--bg2);border:1px dashed var(--border);min-width:0;
+}
+.lifeslot .imgprev{width:100%;height:auto;aspect-ratio:1/1;font-size:14px;font-weight:800;}
+.lifeslot .btn{width:100%;padding:12px 6px;font-size:13px;text-align:center;}
+.lifeslot .lclear{color:var(--bad);border-color:rgba(239,68,68,.4);}
+/* Photo viewer: arrows + swipe between the product's photos. */
+.zoombox{position:relative;}
+.znav{
+  position:absolute;top:50%;transform:translateY(-50%);width:46px;height:46px;border-radius:50%;
+  border:1px solid rgba(255,255,255,.35);background:rgba(0,0,0,.55);color:#fff;
+  font-size:28px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;
+}
+.znav.prev{left:8px;} .znav.next{right:8px;}
+.zcap{
+  text-align:center;margin-top:10px;font-size:13px;font-weight:700;color:#fff;
+  text-shadow:0 1px 3px rgba(0,0,0,.6);
 }
 
 .section-h{
@@ -515,7 +551,7 @@ body.reordering .rbar{display:flex;}
       <small>Imitation Jewellery Stock</small>
     </div>
   </div>
-  <span class="ver-badge" id="verBadge" title="Version and server status">v2.13</span>
+  <span class="ver-badge" id="verBadge" title="Version and server status">v2.14</span>
   <span class="spacer"></span>
   <button class="icon-btn" id="syncBtn" title="Sync sales from IBI Order Processing">&#8635;</button>
   <button class="icon-btn" id="themeBtn" title="Light / dark">&#9680;</button>
@@ -588,7 +624,7 @@ body.reordering .rbar{display:flex;}
 </div>
 
 <footer>
-  <b>IBI Fashion Jewellery v2.13</b> &middot; India Business International<br>
+  <b>IBI Fashion Jewellery v2.14</b> &middot; India Business International<br>
   Served from this laptop &middot; records kept locally in <b>Backend\data\</b>.<br>
   Stock is deducted automatically when a sale is saved in <b>IBI Order Processing</b>.<br>
   <span id="footStat"></span>
@@ -631,6 +667,24 @@ body.reordering .rbar{display:flex;}
               <button class="btn ghost" type="button" id="pImgClear" style="display:none;color:var(--bad);border-color:rgba(239,68,68,.4);">Remove photo</button>
             </div>
           </div>
+        </div>
+        <div class="field full">
+          <label>Lifestyle Photos</label>
+          <div class="lifegrid">
+            <div class="lifeslot">
+              <div class="imgprev" id="pL1Prev">Lifestyle 1</div>
+              <input type="file" id="pL1File" accept="image/*">
+              <button class="btn" type="button" id="pL1Pick">&#127748; Gallery</button>
+              <button class="btn ghost lclear" type="button" id="pL1Clear" style="display:none;">Remove</button>
+            </div>
+            <div class="lifeslot">
+              <div class="imgprev" id="pL2Prev">Lifestyle 2</div>
+              <input type="file" id="pL2File" accept="image/*">
+              <button class="btn" type="button" id="pL2Pick">&#127748; Gallery</button>
+              <button class="btn ghost lclear" type="button" id="pL2Clear" style="display:none;">Remove</button>
+            </div>
+          </div>
+          <div class="hint" id="pLifeHint">A model wearing this piece. The card plays Lifestyle&nbsp;1 &rarr; Lifestyle&nbsp;2 &rarr; product photo as a slideshow.</div>
         </div>
         <div class="field">
           <label>Quantity in Stock <span class="req">*</span></label>
@@ -798,7 +852,12 @@ body.reordering .rbar{display:flex;}
   <div class="modal" style="max-width:560px;background:transparent;border:none;box-shadow:none;">
     <!-- max-height, or a portrait photo overflows a modal that now caps at the
          screen height and the bottom of the picture is simply cut off. -->
-    <img id="imgBig" style="width:100%;max-height:100%;object-fit:contain;border-radius:16px;display:block;" alt="">
+    <div class="zoombox" id="zoomBox">
+      <img id="imgBig" style="width:100%;max-height:calc(100dvh - 90px);object-fit:contain;border-radius:16px;display:block;" alt="">
+      <button class="znav prev" type="button" id="zPrev" aria-label="Previous photo">&#8249;</button>
+      <button class="znav next" type="button" id="zNext" aria-label="Next photo">&#8250;</button>
+    </div>
+    <div class="zcap" id="zCap"></div>
   </div>
 </div>
 
@@ -818,7 +877,7 @@ body.reordering .rbar{display:flex;}
     <button class="ditem" id="dTrash"><span class="di">&#9851;</span><span>Recently Deleted<small>Put a deleted product back</small></span></button>
     <button class="ditem" id="dBaseline"><span class="di">&#9878;</span><span>Reset Sale-Sync Baseline<small>Re-mark today as the starting point</small></span></button>
     <div style="margin-top:14px;padding:11px;border-radius:11px;background:var(--bg2);border:1px solid var(--border);font-size:11px;color:var(--text-muted);line-height:1.7;word-break:break-word;">
-      <b style="color:var(--cyan);">Version v2.13</b> &middot; this laptop is the server<br>
+      <b style="color:var(--cyan);">Version v2.14</b> &middot; this laptop is the server<br>
       <span id="dPing">Server: checking…</span>
     </div>
   </div>
@@ -832,7 +891,7 @@ body.reordering .rbar{display:flex;}
    IBI FASHION JEWELLERY  —  front end
    Version badge lives in: .ver-badge, footer, drawer "Version" line, sw.js
    ═══════════════════════════════════════════════════════════════════════════ */
-var APP_VERSION = "v2.13";
+var APP_VERSION = "v2.14";
 
 /* The laptop is the server. This page is served by Backend\server.js, so the
    API is same-origin — there is nothing to configure and no cloud backend.
@@ -1261,8 +1320,30 @@ function renderGrid(){
   $('listArea').innerHTML = '<div class="grid">' + filtered.map(cardHtml).join('') + '</div>';
 }
 
+/* v2.14 — the card's slideshow order, as the CEO set it: Lifestyle 1 →
+   Lifestyle 2 → the product photo, then round again. Empty slots drop out. */
+function photosOf(p){
+  var out = [];
+  [['Lifestyle 1 URL','Lifestyle 1'],['Lifestyle 2 URL','Lifestyle 2'],['Image URL','Product photo']]
+    .forEach(function(s){ var u = String(p[s[0]] || '').trim(); if(u) out.push({ url: u, label: s[1] }); });
+  return out;
+}
+function thumbHtml(p){
+  var ph = photosOf(p);
+  if(ph.length < 2){
+    var img = ph.length ? ph[0].url : '';
+    return img ? '<img loading="lazy" src="' + esc(img) + '" alt="' + esc(p['Product Name']) + '" onerror="this.style.display=\'none\';this.parentNode.insertAdjacentHTML(\'beforeend\',\'<div class=&quot;ph&quot;>&#128142;</div>\')">'
+               : '<div class="ph">&#128142;</div>';
+  }
+  return ph.map(function(x, i){
+      return '<img class="slide' + (i ? '' : ' on') + '" data-i="' + i + '" loading="lazy" src="' + esc(x.url) + '"'
+        + ' alt="' + (i ? '' : esc(p['Product Name'])) + '" onerror="this.classList.add(\'bad\')">';
+    }).join('')
+    + '<span class="sdots">' + ph.map(function(x, i){ return '<i' + (i ? '' : ' class="on"') + '></i>'; }).join('') + '</span>';
+}
+
 function cardHtml(p){
-  var img = p['Image URL'];
+  var multi = photosOf(p).length > 1;
   var label = p.status === 'out' ? 'Out' : (p.status === 'low' ? 'Low' : 'In stock');
   var owner = (p['Stock Owner'] || 'IBI');
   var meta = ['<span class="owner-tag ' + (owner === 'NSM' ? 'nsm' : 'ibi') + '">' + esc(owner) + ' stock</span>'];
@@ -1271,9 +1352,8 @@ function cardHtml(p){
   if(p['Colour']) meta.push('<span>' + esc(p['Colour']) + '</span>');
 
   return '<div class="card" data-id="' + esc(p['ID']) + '">'
-    + '<div class="thumb" data-act="zoom">'
-      + (img ? '<img loading="lazy" src="' + esc(img) + '" alt="' + esc(p['Product Name']) + '" onerror="this.style.display=\'none\';this.parentNode.insertAdjacentHTML(\'beforeend\',\'<div class=&quot;ph&quot;>&#128142;</div>\')">'
-             : '<div class="ph">&#128142;</div>')
+    + '<div class="thumb' + (multi ? ' multi' : '') + '" data-act="zoom">'
+      + thumbHtml(p)
       + '<span class="pill ' + p.status + '">' + label + '</span>'
       + (p['SKU'] ? '<span class="sku">' + esc(p['SKU']) + '</span>' : '')
     + '</div>'
@@ -1354,9 +1434,100 @@ $('listArea').addEventListener('click', function(e){
   if(act === 'plus')       quickAdjust(p, +1);
   else if(act === 'minus') quickAdjust(p, -1);
   else if(act === 'adjust')openAdjust(p);
-  else if(act === 'zoom')  { if(p['Image URL']){ $('imgBig').src = p['Image URL']; openLayer('imgOverlay'); } else openProduct(p); }
+  else if(act === 'zoom')  {
+    var ph = photosOf(p);
+    if(!ph.length){ openProduct(p); return; }
+    var on = actEl.querySelector('.slide.on');
+    openZoom(p, ph, on ? parseInt(on.getAttribute('data-i'), 10) || 0 : 0);
+  }
   else if(act === 'edit')  openProduct(p);
 });
+
+/* ═══ CARD SLIDESHOW ═════════════════════════════════════
+   Each card with more than one photo cross-fades every 4 s, on its own
+   staggered clock so the grid does not flip all at once. It holds still
+   while a finger or the mouse is on it, off-screen, while the tab is hidden,
+   in Re-arrange mode, and entirely for anyone whose phone asks for reduced
+   motion (WCAG 2.2.2). */
+var SLIDE_MS = 4000;
+var reduceMotion = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+function stepSlide(t, dir){
+  var all = t.querySelectorAll('.slide'), ok = [], cur = 0, i;
+  for(i = 0; i < all.length; i++) if(!all[i].classList.contains('bad')) ok.push(all[i]);
+  if(ok.length < 2) return;
+  for(i = 0; i < ok.length; i++) if(ok[i].classList.contains('on')) cur = i;
+  var nx = (cur + dir + ok.length) % ok.length;
+  for(i = 0; i < all.length; i++) all[i].classList.remove('on');
+  ok[nx].classList.add('on');
+  var dots = t.querySelectorAll('.sdots i'), di = parseInt(ok[nx].getAttribute('data-i'), 10);
+  for(i = 0; i < dots.length; i++) dots[i].classList.toggle('on', i === di);
+}
+setInterval(function(){
+  if(reduceMotion || document.hidden || reorderOn) return;
+  var now = Date.now(), vh = window.innerHeight;
+  var list = document.querySelectorAll('#listArea .thumb.multi');
+  for(var i = 0; i < list.length; i++){
+    var t = list[i];
+    if(!t._due){ t._due = now + SLIDE_MS + Math.floor(Math.random() * 2500); continue; }
+    if(now < t._due || t._hold) continue;
+    var r = t.getBoundingClientRect();
+    if(r.bottom < 0 || r.top > vh) continue;
+    t._due = now + SLIDE_MS;
+    stepSlide(t, 1);
+  }
+}, 500);
+function holdSlides(e, on){
+  var t = e.target.closest && e.target.closest('.thumb.multi');
+  if(!t) return;
+  if(on){ clearTimeout(t._rel); t._hold = true; }
+  else t._rel = setTimeout(function(){ t._hold = false; t._due = Date.now() + SLIDE_MS; }, 1500);
+}
+$('listArea').addEventListener('pointerover', function(e){ holdSlides(e, true); });
+$('listArea').addEventListener('pointerout',  function(e){ holdSlides(e, false); });
+$('listArea').addEventListener('pointerdown', function(e){ holdSlides(e, true); });
+$('listArea').addEventListener('pointerup',   function(e){ holdSlides(e, false); });
+
+/* ═══ PHOTO VIEWER ═══════════════════════════════════════
+   Opens on the photo the card was showing; arrows, a swipe or the keyboard
+   step through the product's photos. */
+var zoomPh = [], zoomIx = 0, zoomName = '';
+function openZoom(p, ph, ix){
+  zoomPh = ph; zoomIx = ix < ph.length ? ix : 0; zoomName = p['Product Name'];
+  showZoom();
+  openLayer('imgOverlay');
+}
+function showZoom(){
+  var x = zoomPh[zoomIx];
+  $('imgBig').src = x.url;
+  $('imgBig').alt = zoomName + ' — ' + x.label;
+  var many = zoomPh.length > 1;
+  $('zPrev').style.display = $('zNext').style.display = many ? 'flex' : 'none';
+  $('zCap').textContent = (many ? (zoomIx + 1) + ' / ' + zoomPh.length + ' · ' : '') + x.label;
+}
+function stepZoom(d){
+  if(zoomPh.length < 2) return;
+  zoomIx = (zoomIx + d + zoomPh.length) % zoomPh.length;
+  showZoom();
+}
+$('zPrev').onclick = function(e){ e.stopPropagation(); stepZoom(-1); };
+$('zNext').onclick = function(e){ e.stopPropagation(); stepZoom(1); };
+document.addEventListener('keydown', function(e){
+  if(!layerIsOpen('imgOverlay')) return;
+  if(e.key === 'ArrowLeft') stepZoom(-1);
+  else if(e.key === 'ArrowRight') stepZoom(1);
+});
+(function(){
+  var sx = null, sy = null;
+  $('zoomBox').addEventListener('touchstart', function(e){
+    sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+  }, { passive:true });
+  $('zoomBox').addEventListener('touchend', function(e){
+    if(sx === null) return;
+    var dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
+    sx = null;
+    if(Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) stepZoom(dx < 0 ? 1 : -1);
+  }, { passive:true });
+})();
 function byId(id){
   for(var i=0;i<products.length;i++) if(String(products[i]['ID']) === String(id)) return products[i];
   return null;
@@ -1670,6 +1841,10 @@ function openProduct(p){
   $('pImgHint').innerHTML = 'Tap <b>Take Photo</b> to shoot it now, or <b>Gallery</b> to pick one.'
     + ' Photos are shrunk to 1000&nbsp;px and kept on the laptop.';
   setPreview(p ? p['Image URL'] : '');
+  LIFE_SLOTS.forEach(function(s){
+    lifeState[s.k] = { url: p ? String(p[s.U] || '') : '', pending: null };
+    setLife(s);
+  });
   markNamePick();
   updateMargin();
   openLayer('prodOverlay');
@@ -1722,6 +1897,40 @@ function takeImage(input, label){
   // otherwise fires no change event).
   input.value = '';
 }
+
+/* v2.14 — the two lifestyle slots. Same shrink-to-1000px path as the product
+   photo; nothing reaches the laptop until Save. */
+var LIFE_SLOTS = [
+  { k: 'L1', U: 'Lifestyle 1 URL', url: 'life1Url', data: 'life1Data', label: 'Lifestyle 1' },
+  { k: 'L2', U: 'Lifestyle 2 URL', url: 'life2Url', data: 'life2Data', label: 'Lifestyle 2' }
+];
+var lifeState = { L1: { url: '', pending: null }, L2: { url: '', pending: null } };
+function setLife(s){
+  var st = lifeState[s.k], src = st.pending || st.url;
+  $('p' + s.k + 'Prev').innerHTML = src ? '<img src="' + esc(src) + '" alt="">' : s.label;
+  $('p' + s.k + 'Clear').style.display = src ? 'block' : 'none';
+}
+LIFE_SLOTS.forEach(function(s){
+  $('p' + s.k + 'Pick').onclick = function(){ $('p' + s.k + 'File').click(); };
+  $('p' + s.k + 'Clear').onclick = function(){
+    lifeState[s.k] = { url: '', pending: null };
+    setLife(s);
+  };
+  $('p' + s.k + 'File').addEventListener('change', function(){
+    var input = this, f = input.files && input.files[0];
+    if(!f) return;
+    $('pLifeHint').textContent = s.label + ' received — preparing…';
+    shrinkImage(f, 1000, 0.82).then(function(dataUrl){
+      lifeState[s.k].pending = dataUrl;
+      setLife(s);
+      $('pLifeHint').innerHTML = s.label + ' ready (~' + Math.round(dataUrl.length * 0.73 / 1024)
+        + ' KB). It is saved on the laptop when you tap Save.';
+    }).catch(function(){
+      $('pLifeHint').textContent = 'Could not read that photo — try again.';
+    });
+    input.value = '';
+  });
+});
 
 /* Downscale + re-encode in the browser so the upload stays small and fast.
    createImageBitmap with imageOrientation:'from-image' is used where available
@@ -1806,6 +2015,11 @@ $('pSave').onclick = function(){
     imageUrl: $('pImgUrl').value.trim()
   };
   if(pendingImage){ payload.imageData = pendingImage.data; payload.imageMime = pendingImage.mime; }
+  LIFE_SLOTS.forEach(function(s){
+    var st = lifeState[s.k];
+    payload[s.url] = st.url;
+    if(st.pending) payload[s.data] = st.pending;
+  });
 
   loading(true);
   api(payload.id ? 'update' : 'add', payload).then(function(r){
@@ -2006,7 +2220,7 @@ $('dCsv').onclick = function(){
   var cols = ['SKU','Product Name','Category','Material / Finish','Colour','Size','Weight (gm)',
               'Qty in Stock','Reorder Level','Wholesale Price','Retail Price (MRP)','HSN','GST %',
               'Stock Owner','Supplier','Purchase Date','Storage Location','Aliases','Notes','Image URL',
-              'Created On','Last Updated'];
+              'Lifestyle 1 URL','Lifestyle 2 URL','Created On','Last Updated'];
   function cell(v){
     var s = String(v == null ? '' : v);
     return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
