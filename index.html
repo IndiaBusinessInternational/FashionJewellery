@@ -414,7 +414,7 @@ input[type=file]{display:none;}
 }
 .ditem:hover{border-color:var(--border-strong);transform:translateX(-2px);}
 .ditem .di{font-size:16px;width:22px;text-align:center;flex:none;}
-.ditem small{display:block;font-size:10.5px;font-weight:400;color:var(--text-muted);margin-top:1px;}
+.ditem small{display:block;font-size:12px;font-weight:400;color:var(--text-muted);margin-top:1px;}
 .scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:290;display:none;}
 .scrim.open{display:block;}
 
@@ -551,9 +551,9 @@ body.reordering .rbar{display:flex;}
       <small>Imitation Jewellery Stock</small>
     </div>
   </div>
-  <span class="ver-badge" id="verBadge" title="Version and server status">v2.14</span>
+  <span class="ver-badge" id="verBadge" title="Version and server status">v2.15</span>
   <span class="spacer"></span>
-  <button class="icon-btn" id="syncBtn" title="Sync sales from IBI Order Processing">&#8635;</button>
+  <button class="icon-btn" id="syncBtn" title="Sync sales (IBI Order Processing) and returns (IBI Returns Logger)">&#8635;</button>
   <button class="icon-btn" id="themeBtn" title="Light / dark">&#9680;</button>
   <button class="icon-btn" id="menuBtn" title="Menu">&#9776;</button>
 </div>
@@ -624,7 +624,7 @@ body.reordering .rbar{display:flex;}
 </div>
 
 <footer>
-  <b>IBI Fashion Jewellery v2.14</b> &middot; India Business International<br>
+  <b>IBI Fashion Jewellery v2.15</b> &middot; India Business International<br>
   Served from this laptop &middot; records kept locally in <b>Backend\data\</b>.<br>
   Stock is deducted automatically when a sale is saved in <b>IBI Order Processing</b>.<br>
   <span id="footStat"></span>
@@ -866,7 +866,7 @@ body.reordering .rbar{display:flex;}
 <div class="drawer" id="drawer">
   <div class="mhead"><h2>Menu</h2><span class="x" id="drawerClose">&times;</span></div>
   <div class="dbody">
-    <button class="ditem" id="dSync"><span class="di">&#8635;</span><span>Sync Sales Now<small>Pull processed orders and deduct stock</small></span></button>
+    <button class="ditem" id="dSync"><span class="di">&#8635;</span><span>Sync Sales &amp; Returns Now<small>Orders take stock off · Good returns put it back</small></span></button>
     <button class="ditem" id="dLog"><span class="di">&#128220;</span><span>Stock Movement Log<small>Every change, with who and why</small></span></button>
     <button class="ditem" id="dReorder"><span class="di">&#8645;</span><span>Re-arrange Products<small>Drag cards into your own order — saved for every device</small></span></button>
     <button class="ditem" id="dCsv"><span class="di">&#11015;</span><span>Export CSV<small>Full register as a spreadsheet</small></span></button>
@@ -877,7 +877,7 @@ body.reordering .rbar{display:flex;}
     <button class="ditem" id="dTrash"><span class="di">&#9851;</span><span>Recently Deleted<small>Put a deleted product back</small></span></button>
     <button class="ditem" id="dBaseline"><span class="di">&#9878;</span><span>Reset Sale-Sync Baseline<small>Re-mark today as the starting point</small></span></button>
     <div style="margin-top:14px;padding:11px;border-radius:11px;background:var(--bg2);border:1px solid var(--border);font-size:11px;color:var(--text-muted);line-height:1.7;word-break:break-word;">
-      <b style="color:var(--cyan);">Version v2.14</b> &middot; this laptop is the server<br>
+      <b style="color:var(--cyan);">Version v2.15</b> &middot; this laptop is the server<br>
       <span id="dPing">Server: checking…</span>
     </div>
   </div>
@@ -891,7 +891,7 @@ body.reordering .rbar{display:flex;}
    IBI FASHION JEWELLERY  —  front end
    Version badge lives in: .ver-badge, footer, drawer "Version" line, sw.js
    ═══════════════════════════════════════════════════════════════════════════ */
-var APP_VERSION = "v2.14";
+var APP_VERSION = "v2.15";
 
 /* The laptop is the server. This page is served by Backend\server.js, so the
    API is same-origin — there is nothing to configure and no cloud backend.
@@ -1155,6 +1155,14 @@ function ping(){
             : '<br><span style="color:var(--warn);">Sale sync not baselined yet</span>')
         + (r.lastPoll
             ? '<br>Last check: ' + esc(r.lastPoll.at) + (r.lastPoll.ok ? '' : ' <span style="color:var(--bad);">failed</span>')
+            : '')
+        /* v2.15 — Good returns from IBI Returns Logger come back on the shelf. */
+        + (r.returnsSync
+            ? '<br>Return sync live (Good returns only)'
+              + (r.lastReturnsPoll
+                  ? ' · last check ' + esc(r.lastReturnsPoll.at)
+                    + (r.lastReturnsPoll.ok ? '' : ' <span style="color:var(--bad);">failed</span>')
+                  : '')
             : '');
       $('footStat').textContent = 'Served from this laptop · server ' + r.version
         + ' · ' + r.products + ' products stored locally';
@@ -2118,23 +2126,38 @@ $('aSave').onclick = function(){
     }).catch(function(err){ loading(false); toast('Network error: ' + esc(err.message), 'err'); });
 };
 
-/* ═══ SALE SYNC  ←  IBI ORDER PROCESSING ═════════════════
-   The laptop server does the work: it reads the Orders feed itself, on a
-   timer, and applies anything sold. This button just asks it to check now. */
+/* ═══ SALE + RETURN SYNC  ←  IBI ORDER PROCESSING · IBI RETURNS LOGGER ═══
+   The laptop server does the work: it reads both feeds itself, on a timer —
+   orders take stock off, Good returns put it back. This button just asks it
+   to check both now. One control for both, because to the person pressing it
+   they are one question: "is the register up to date?" */
 function syncSales(silent){
   $('syncBtn').classList.add('busy');
-  api('syncOrders', {}).then(function(r){
+  var sales = api('syncOrders', {});
+  /* An older server has no syncReturns — that is "not linked yet", not a failure. */
+  var rets = api('syncReturns', {}).catch(function(){ return null; });
+  Promise.all([sales, rets]).then(function(rr){
+    var r = rr[0], t = rr[1];
     $('syncBtn').classList.remove('busy');
     if(!r || !r.ok){ if(!silent) toast('Sync failed: ' + esc((r && r.error) || ''), 'err', 6000); return; }
+    var tOk = t && t.ok;
+    var added = tOk ? (t.added || 0) : 0, reversed = tOk ? (t.reversed || 0) : 0;
+    var parts = [];
+    if(r.deducted) parts.push('<b>' + r.deducted + '</b> sale' + (r.deducted===1?'':'s') + ' applied — stock reduced');
+    if(added) parts.push('<b>' + added + '</b> Good return' + (added===1?'':'s') + ' back in stock');
+    if(reversed) parts.push('<b>' + reversed + '</b> return' + (reversed===1?'':'s') + ' reversed');
     if(r.baseline){
       toast('Baseline set — <b>' + r.baselined + '</b> existing order' + (r.baselined===1?'':'s')
           + ' marked as already accounted for. From now on, new sales reduce stock automatically.', 'ok', 8000);
-    } else if(r.deducted){
-      toast('<b>' + r.deducted + '</b> sale' + (r.deducted===1?'':'s') + ' applied — stock reduced.', 'ok', 6000);
+    } else if(parts.length){
+      toast(parts.join('<br>') + '.', 'ok', 6000);
     } else if(!silent){
-      toast('Up to date — no new jewellery sales to apply.', 'ok', 3000);
+      toast('Up to date — no new jewellery sales or returns to apply.', 'ok', 3000);
     }
-    if(r.deducted || r.baseline) refresh(true);
+    if(!silent && t && !t.ok && t.error && !/Unknown action/.test(t.error)){
+      toast('Returns check failed: ' + esc(t.error), 'err', 6000);
+    }
+    if(r.deducted || r.baseline || added || reversed) refresh(true);
     ping();
   }).catch(function(err){
     $('syncBtn').classList.remove('busy');

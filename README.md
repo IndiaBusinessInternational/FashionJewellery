@@ -1,4 +1,4 @@
-# IBI Fashion Jewellery v2.14
+# IBI Fashion Jewellery v2.15
 
 Imitation / fashion jewellery stock register for **India Business International** —
 photos, quantities and wholesale prices, with stock **deducted automatically when a
@@ -62,6 +62,8 @@ the caller is identified by `cf-connecting-ip`, which Cloudflare sets at its edg
 to let a client forge (it rejects such requests with error 1000).
 | `pushKey` | The shared key IBI Order Processing sends with its instant push. Blank = the push is off; the poll below still applies every sale. |
 | `pollMinutes` | How often the laptop checks Order Processing for new sales (5) |
+| `returnsFeedUrl` | IBI Returns Logger's web app (read only). Blank = returns are not linked. |
+| `returnsPollMinutes` | How often the laptop checks the Returns Logger for Good returns (10) |
 
 ⚠ `config.json` holds the PINs and is never served over HTTP (the whole `Backend\` folder
 is blocked), and `Backend\` is `.gitignore`d so none of it reaches GitHub.
@@ -71,7 +73,7 @@ is blocked), and `Backend\` is `.gitignore`d so none of it reaches GitHub.
 ```
 Backend\data\products.json    the register
 Backend\data\stocklog.json    every movement, with the reason and the order it came from
-Backend\data\syncstate.json   which sales have already been applied
+Backend\data\syncstate.json   which sales and returns have already been applied
 Backend\data\images\          product photos
 Backend\data\backups\         one dated snapshot per day, kept 60 days
 ```
@@ -112,6 +114,30 @@ re-draws the line at today.
 containment match — anything ambiguous is left alone rather than guessed at. Order
 Processing's product picker is fed from this register, so exact matches are the norm.
 Stock never goes below zero; an oversell is clamped and flagged in the log.
+
+**One order, several different pieces (v2.15).** When a buyer orders two different
+necklaces together, the Package Tracker keeps them as one record — the titles joined by
+`; ` and the order's total quantity — and Order Processing saves that as one row. Each
+line is now matched on its own and takes its own piece off (1 each); a line this register
+cannot name by itself is looked up in Order Processing's *remembered* title → shelf links
+(confirmed by a packer earlier), never guessed. A total larger than the number of lines is
+flagged in the log ("check which line had the extra"). Replayed against all 1,932 live
+orders: the 73 single-item sales were unchanged, and the one two-necklace order
+(403-6114500-2415513, Royal Blue + Olive Green) now takes both.
+
+## How returns put stock back (v2.15)
+
+The laptop reads IBI Returns Logger every `returnsPollMinutes`. A return saved there with
+**Condition = Good** puts **one** piece back on this register; Bad / Slight Damage never
+come back on sale. The product is the shelf the Returns Logger restocked (its name is this
+register's own name); with no shelf chosen there, the return's title is matched the same way
+a sale title is. Keyed on the return's own ID, so it counts once — and if that return is
+later changed away from Good, moved to another shelf, or deleted, the piece comes off again.
+The first run marked every existing return as history (they had already been counted by
+hand). The register then mirrors the new figure into IBI Stock Availability as usual.
+
+⚠ **Staff: do not also tap +1 for a Good return** — the register now does it by itself
+within ten minutes (or at once with ↻ Sync).
 
 ## Reaching it from outside the laptop — already set up
 
